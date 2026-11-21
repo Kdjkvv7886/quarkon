@@ -98,13 +98,27 @@ UAC prompt), adds desktop and Start-menu shortcuts, registers an uninstaller in
 - **A portable zip** (`Quarkon-<version>-win64-portable.zip`) is published next to
   the installer for locked-down machines where running a setup executable is not
   allowed: unpack it and run `Quarkon\Quarkon.exe`.
+- **Signed and attributed.** Both executables carry the publisher
+  `Kdjkvv7886` in their file properties and an Authenticode signature
+  (`CN=Kdjkvv7886`). The certificate is self-signed at the moment, so Windows still
+  shows the SmartScreen prompt until the certificate is trusted or a CA-issued one
+  replaces it (a PFX secret swap, no rebuild). Verify an executable with:
+
+  ```powershell
+  Get-AuthenticodeSignature .\QuarkonSetup-3.2.1-win64.exe | Format-List Status, SignerCertificate
+  (Get-Item .\QuarkonSetup-3.2.1-win64.exe).VersionInfo | Format-List CompanyName, ProductName, FileVersion
+  ```
+
+  The signer certificate is published next to the release
+  (`Kdjkvv7886-codesign.cer`); install it under *Trusted Root Certification
+  Authorities* to make the publisher trusted on your machines.
 
 For IT departments the same executable deploys unattended (per-user, exit code
 `0` on success):
 
 ```powershell
-QuarkonSetup-3.2.0-win64.exe --silent --dir "$env:LOCALAPPDATA\Programs\Quarkon" --no-launch
-QuarkonSetup-3.2.0-win64.exe --silent --uninstall
+QuarkonSetup-3.2.1-win64.exe --silent --dir "$env:LOCALAPPDATA\Programs\Quarkon" --no-launch
+QuarkonSetup-3.2.1-win64.exe --silent --uninstall
 ```
 
 Build the artefacts yourself with `python packaging/windows/build_windows.py`

@@ -1,4 +1,4 @@
-﻿# Quarkon development tasks.
+# Quarkon development tasks.
 #
 #   make install     install the package in editable mode with dev extras
 #   make test        run the test suite (no GPU or network required)

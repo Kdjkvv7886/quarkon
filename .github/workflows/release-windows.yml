@@ -1,4 +1,4 @@
-﻿name: Windows installer
+name: Windows installer
 
 # Builds the downloadable artefacts twice over:
 #   * every manual run -> workflow artifact (internally testable)
@@ -35,6 +35,22 @@ jobs:
           pip install -r packaging/windows/requirements.txt
           pip install -e .
 
+      - name: Import the code-signing certificate
+        shell: pwsh
+        env:
+          SIGN_PFX_BASE64: ${{ secrets.WINDOWS_SIGN_PFX_BASE64 }}
+          SIGN_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGN_PFX_PASSWORD }}
+        run: |
+          if (-not $env:SIGN_PFX_BASE64) {
+            Write-Host "signing: no WINDOWS_SIGN_PFX_BASE64 secret, artefacts stay unsigned"
+            exit 0
+          }
+          $path = Join-Path $env:RUNNER_TEMP "quarkon-signing.pfx"
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:SIGN_PFX_BASE64))
+          "QUARKON_SIGN_PFX=$path" >> $env:GITHUB_ENV
+          "QUARKON_SIGN_PFX_PASSWORD=$env:SIGN_PFX_PASSWORD" >> $env:GITHUB_ENV
+          Write-Host "signing: certificate imported from the repository secret"
+
       - name: Build installer and portable build
         run: python packaging/windows/build_windows.py
 
@@ -54,6 +70,7 @@ jobs:
             dist/windows/QuarkonSetup-*-win64.exe
             dist/windows/Quarkon-*-win64-portable.zip
             dist/windows/SHA256SUMS.txt
+            packaging/windows/assets/Kdjkvv7886-codesign.cer
           if-no-files-found: error
 
       - name: Publish to the GitHub Release
@@ -64,3 +81,4 @@ jobs:
             dist/windows/QuarkonSetup-*-win64.exe
             dist/windows/Quarkon-*-win64-portable.zip
             dist/windows/SHA256SUMS.txt
+            packaging/windows/assets/Kdjkvv7886-codesign.cer

@@ -1,4 +1,4 @@
-﻿# Quarkon Windows installer - end-to-end smoke test.
+# Quarkon Windows installer - end-to-end smoke test.
 #
 # Performs a real per-user installation of a built setup executable, verifies the
 # installed files, starts the application in headless self-check mode, checks that

@@ -1,8 +1,42 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.2.1] - 2026-11-21
+
+Ships the Windows executables with publisher metadata and an Authenticode
+signature, so file properties and the UAC prompt name the author instead of
+"Unknown".
+
+### Added
+
+- Publisher resource on both executables: `CompanyName` / `LegalCopyright`
+  `Kdjkvv7886`, `ProductName` `Quarkon`, real file/product versions and
+  `FileDescription` (visible in the file properties dialog).
+- `packaging/windows/sign_artifacts.ps1` and build-script integration: when
+  `QUARKON_SIGN_PFX` (+ password) or `QUARKON_SIGN_CERT_THUMBPRINT` is present,
+  `Quarkon.exe` is signed before it enters the payload and the setup executable is
+  signed after it is built. The build fails if signing produces an unusable file.
+- Public certificate `packaging/windows/assets/Kdjkvv7886-codesign.cer` published
+  with the release so users can inspect or trust the signer explicitly.
+
+### Notes
+
+- The certificate is **self-signed** (3-year, RSA-3072, code-signing EKU): the
+  signature is valid and integrity-protected, but Windows shows the smart-screen
+  warning until the certificate is trusted or a CA-issued certificate is used. The
+  build accepts any PFX, so switching to a commercial certificate is a secret
+  change only, no code change.
+- Signing is opt-in: without a key the build still produces unsigned artefacts and
+  reports `signing: skipped`.
+
+### Verified
+
+- Rebuilt 3.2.1 locally with the PFX: `Get-AuthenticodeSignature` reports signer
+  `CN=Kdjkvv7886, O=Kdjkvv7886, C=UA` on both executables; the signed app still
+  passes `--check`; installer smoke test passes on signed artefacts.
 
 ## [3.2.0] - 2026-11-21
 

@@ -1,4 +1,4 @@
-﻿"""Quarkon desktop entry point (``Quarkon.exe``).
+"""Quarkon desktop entry point (``Quarkon.exe``).
 
 The application interface is the local web UI the pipeline ships; this executable
 is the double-clickable shell around it:

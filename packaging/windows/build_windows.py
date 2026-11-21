@@ -1,4 +1,4 @@
-﻿"""Build the Windows desktop application and the single-file setup wizard.
+"""Build the Windows desktop application and the single-file setup wizard.
 
 Usage (from the repository root, on Windows)::
 
@@ -29,6 +29,7 @@ import hashlib
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 import zipfile
@@ -38,6 +39,12 @@ from typing import Any, Final
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
 PACKAGING_DIR: Final[Path] = Path(__file__).resolve().parent
 ASSETS_DIR: Final[Path] = PACKAGING_DIR / "assets"
+
+#: Publisher identity stamped into the Windows version resource and carried by
+#: the Authenticode signature (the release is signed "by Kdjkvv7886").
+PUBLISHER_NAME: Final[str] = "Kdjkvv7886"
+PRODUCT_NAME: Final[str] = "Quarkon"
+COPYRIGHT: Final[str] = "Copyright (C) 2026 Kdjkvv7886"
 
 #: Modules that belong to the optional training stack. The desktop app never
 #: imports them at start-up; excluding them keeps the download small.
@@ -97,7 +104,9 @@ def _run_pyinstaller(args: list[str]) -> None:
         os.chdir(previous)
 
 
-def build_app(*, distpath: Path, workpath: Path, specpath: Path, keep_work: bool) -> Path:
+def build_app(
+    *, version: str, distpath: Path, workpath: Path, specpath: Path, keep_work: bool
+) -> Path:
     """Stage 1: the onedir desktop application."""
     if distpath.exists() and not keep_work:
         shutil.rmtree(distpath, ignore_errors=True)
@@ -113,6 +122,7 @@ def build_app(*, distpath: Path, workpath: Path, specpath: Path, keep_work: bool
         f"--workpath={workpath}",
         f"--specpath={specpath}",
         f"--icon={ASSETS_DIR / 'quarkon.ico'}",
+        f"--version-file={write_version_info(distpath.parent, version, 'Quarkon.exe', 'Quarkon desktop application')}",
         f"--paths={PACKAGING_DIR}",
         # The application imports the ``quarkon`` package from the checkout, and
         # the build script runs from packaging/windows - add the repository root
@@ -134,6 +144,87 @@ def build_app(*, distpath: Path, workpath: Path, specpath: Path, keep_work: bool
     if not exe.is_file():
         raise SystemExit(f"error: PyInstaller did not produce {exe}")
     return app_dir
+
+
+def write_version_info(
+    build_dir: Path, version: str, filename: str, description: str
+) -> Path:
+    """Write the PyInstaller ``--version-file`` resource seen in file properties."""
+    build_dir.mkdir(parents=True, exist_ok=True)
+    numbers = tuple(int(part) for part in re.findall(r"\d+", version)[:3])
+    while len(numbers) < 3:
+        numbers = (*numbers, 0)
+    filevers = f"({numbers[0]}, {numbers[1]}, {numbers[2]}, 0)"
+    table = (
+        "StringFileInfo([StringTable('040904B0', [\n"
+        f"      StringStruct('CompanyName', '{PUBLISHER_NAME}'),\n"
+        f"      StringStruct('FileDescription', '{description}'),\n"
+        f"      StringStruct('FileVersion', '{version}'),\n"
+        f"      StringStruct('InternalName', '{PRODUCT_NAME}'),\n"
+        f"      StringStruct('LegalCopyright', '{COPYRIGHT}'),\n"
+        f"      StringStruct('OriginalFilename', '{filename}'),\n"
+        f"      StringStruct('ProductName', '{PRODUCT_NAME}'),\n"
+        f"      StringStruct('ProductVersion', '{version}'),\n"
+        "    ])]),\n"
+        "    VarFileInfo([VarStruct('Translation', [1033, 1200])])\n"
+    )
+    content = (
+        "VSVersionInfo(\n"
+        "  ffi=FixedFileInfo(\n"
+        f"    filevers={filevers}, prodvers={filevers}, mask=0x3f, flags=0x0,\n"
+        "    OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)\n"
+        "  ),\n"
+        "  kids=[\n"
+        f"    {table}"
+        "  ]\n"
+        ")\n"
+    )
+    path = build_dir / f"version_info_{filename.replace('.', '_')}.txt"
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+def signer_configured() -> bool:
+    """True when a certificate was supplied through the environment."""
+    return bool(
+        os.environ.get("QUARKON_SIGN_PFX") or os.environ.get("QUARKON_SIGN_CERT_THUMBPRINT")
+    )
+
+
+def sign_files(files: list[Path]) -> None:
+    """Authenticode-sign the built executables when a certificate is configured."""
+    if not files:
+        return
+    if not signer_configured():
+        print("  signing: skipped (set QUARKON_SIGN_PFX + password, or QUARKON_SIGN_CERT_THUMBPRINT)")
+        return
+    system_root = os.environ.get("SystemRoot", r"C:\Windows")
+    powershell = Path(system_root) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
+    env = os.environ.copy()
+    env["QUARKON_SIGN_FILES"] = ";".join(str(path) for path in files)
+    result = subprocess.run(
+        [
+            str(powershell),
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(PACKAGING_DIR / "sign_artifacts.ps1"),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=300,
+        check=False,
+    )
+    for line in (result.stdout or "").splitlines():
+        if line.strip():
+            print(f"  {line.strip()}")
+    if result.returncode != 0:
+        raise SystemExit(
+            "error: code signing failed: " + (result.stderr or result.stdout).strip()
+        )
 
 
 def zip_app(app_dir: Path, payload: Path) -> Path:
@@ -159,7 +250,9 @@ def write_build_info(build_dir: Path, version: str) -> Path:
     return build_info
 
 
-def build_setup(*, version: str, payload: Path, build_dir: Path, distpath: Path, workpath: Path, specpath: Path) -> Path:
+def build_setup(
+    *, version: str, payload: Path, build_dir: Path, distpath: Path, workpath: Path, specpath: Path
+) -> Path:
     """Stage 2: the single-file wizard that carries the payload."""
     if distpath.exists():
         shutil.rmtree(distpath, ignore_errors=True)
@@ -175,6 +268,7 @@ def build_setup(*, version: str, payload: Path, build_dir: Path, distpath: Path,
         f"--workpath={workpath}",
         f"--specpath={specpath}",
         f"--icon={ASSETS_DIR / 'quarkon.ico'}",
+        f"--version-file={write_version_info(build_dir, version, f'QuarkonSetup-{version}.exe', 'Quarkon installer')}",
         f"--paths={PACKAGING_DIR}",
         f"--paths={build_dir}",
         "--log-level=WARN",
@@ -254,12 +348,14 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_app:
         started = time.time()
         app_dir = build_app(
+            version=version,
             distpath=build_dir / "app",
             workpath=build_dir / "work-app",
             specpath=build_dir / "spec-app",
             keep_work=args.keep_work,
         )
         print(f"  application built in {time.time() - started:.0f}s: {app_dir}")
+        sign_files([app_dir / "Quarkon.exe"])
         zip_app(app_dir, payload)
         print(f"  payload: {payload} ({_human(payload.stat().st_size)})")
     elif not payload.is_file():
@@ -277,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             specpath=build_dir / "spec-setup",
         )
         print(f"  setup built in {time.time() - started:.0f}s: {setup} ({_human(setup.stat().st_size)})")
+        sign_files([setup])
         target = out_dir / f"QuarkonSetup-{version}-win64.exe"
         shutil.copy2(setup, target)
         artefacts.append(target)

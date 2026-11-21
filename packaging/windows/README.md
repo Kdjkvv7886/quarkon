@@ -1,4 +1,4 @@
-﻿# Windows installer and desktop application
+# Windows installer and desktop application
 
 Two artefacts are built from this folder:
 
@@ -78,6 +78,34 @@ never touches machine-wide registry keys.
 | `ui_kit.py` | Shared Tk design system (palette, gradient hero, rounded buttons, progress strip, log view, brand mark). |
 | `make_icon.py` | Regenerates `assets/quarkon.ico` (7 sizes) and `assets/quarkon-256.png` from code. |
 | `build_windows.py` | PyInstaller orchestration, payload zipping, portable zip and checksums. |
+
+## Code signing
+
+Both executables carry publisher metadata (`Kdjkvv7886`) and, when a certificate is
+configured, an Authenticode signature. The build signs `Quarkon.exe` **before** it is
+zipped into the payload and signs the setup executable after it is produced; without
+a certificate the build still succeeds and prints `signing: skipped`.
+
+```powershell
+$env:QUARKON_SIGN_PFX = "$PWD\build\signing\quarkon-signing.pfx"
+$env:QUARKON_SIGN_PFX_PASSWORD = "…"
+python packaging/windows/build_windows.py
+
+Get-AuthenticodeSignature dist\windows\QuarkonSetup-3.2.1-win64.exe |
+    Format-List Status, SignerCertificate
+```
+
+CI uses repository secrets `WINDOWS_SIGN_PFX_BASE64` (base64 of the PFX) and
+`WINDOWS_SIGN_PFX_PASSWORD`; the workflow imports the PFX into the runner's user
+store and the same code path signs the artefacts.
+
+The project certificate is **self-signed** (`CN=Kdjkvv7886, O=Kdjkvv7886, C=UA`,
+RSA-3072, code-signing EKU, valid until 2029-11-21). `Get-AuthenticodeSignature`
+reports `UnknownError` — that means "the signature is valid but the root is not
+trusted", not "unsigned". SmartScreen keeps warning until the certificate is placed
+in *Trusted Root Certification Authorities* on the target machine, or until a
+CA-issued certificate replaces it. `packaging/windows/assets/Kdjkvv7886-codesign.cer`
+is the public part and is published with the release.
 
 ## Design notes
 

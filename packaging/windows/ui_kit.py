@@ -1,4 +1,4 @@
-﻿"""Shared visual language for the Quarkon Windows installer and app window.
+"""Shared visual language for the Quarkon Windows installer and app window.
 
 Both executables are Tkinter programs, so the design system lives here instead of
 being duplicated: one palette, one set of widgets, one brand mark. The goal is a

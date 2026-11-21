@@ -11,4 +11,4 @@ from typing import Final
 
 __all__ = ["__version__"]
 
-__version__: Final[str] = "3.2.0"
+__version__: Final[str] = "3.2.1"

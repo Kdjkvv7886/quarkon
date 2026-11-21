@@ -1,4 +1,4 @@
-﻿"""Installation engine for the Quarkon Windows build.
+"""Installation engine for the Quarkon Windows build.
 
 The wizard in :mod:`installer_entry` is only a view; every side effect lives here
 so the same code path can be driven by:

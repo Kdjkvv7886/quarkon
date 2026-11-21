@@ -1,4 +1,28 @@
-﻿# Release checklist
+# Release checklist
+
+## v3.2.1 — publisher identity and code signing
+
+Status: **verified on this machine**. The executables now name `Kdjkvv7886` in
+their file properties and carry an Authenticode signature.
+
+| Item | Value |
+|---|---|
+| Version | `3.2.1` |
+| Signing | self-signed `CN=Kdjkvv7886, O=Kdjkvv7886, C=UA`, RSA-3072, EKU code-signing, valid to 2029-11-21 |
+| Metadata | `CompanyName=Kdjkvv7886`, `ProductName=Quarkon`, `FileVersion=3.2.1`, `LegalCopyright=(C) 2026 Kdjkvv7886` |
+| Signing key | PFX held locally; GitHub Actions secrets `WINDOWS_SIGN_PFX_BASE64` / `WINDOWS_SIGN_PFX_PASSWORD` |
+| Public cert | `packaging/windows/assets/Kdjkvv7886-codesign.cer`, attached to the release |
+
+| Gate | Result |
+|---|---|
+| `Get-AuthenticodeSignature` on setup and app | signer `CN=Kdjkvv7886…`, status `UnknownError` (untrusted self-signed root - signature itself is valid) |
+| File properties | Company/Product/Version present on both executables |
+| Smoke test on the signed installer | PASS: install → wizard render → `--check` → uninstall |
+| Tests / types / lint | 583 tests, mypy strict 0 on 64 modules (Win + Linux), ruff 0, bandit -ll 0 |
+
+**Limitation:** self-signed means SmartScreen still shows the warning until the
+certificate is trusted on the machine or a CA-issued certificate is bought. The
+build accepts any PFX through the same environment variables.
 
 ## v3.2.0 — Windows installer and desktop launcher
 
