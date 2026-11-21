@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opendistill"
-version = "1.1.0"
+version = "1.1.1"
 description = "Production-grade pipeline for distilling reasoning models into compact, self-hosted edge models."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
@@ -82,7 +82,18 @@ disallow_untyped_decorators = false
 exclude = ["build/", "dist/"]
 
 [[tool.mypy.overrides]]
-module = ["yaml", "datasets.*", "trl.*", "transformers.*", "unsloth.*", "peft.*", "torch.*"]
+module = [
+    "yaml",
+    "datasets.*",
+    "trl.*",
+    "transformers.*",
+    "unsloth.*",
+    "peft.*",
+    "torch.*",
+    "huggingface_hub.*",
+    "safetensors.*",
+    "bitsandbytes.*",
+]
 ignore_missing_imports = true
 
 [tool.ruff]

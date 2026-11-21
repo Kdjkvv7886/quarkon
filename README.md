@@ -27,6 +27,13 @@ print(result.runtime_model)
 
 ---
 
+## Security
+
+Security-relevant behaviour is documented in [SECURITY.md](SECURITY.md): the
+clean-room privacy layer, TLS policy for the teacher API, credential redaction in
+diagnostics, pinned model revisions and the safetensors-only adapter rule. Report
+vulnerabilities privately via GitHub Security Advisories.
+
 ## Pipeline
 
 ```
@@ -303,8 +310,8 @@ manifest summary together with the effective configuration.
 ```bash
 pip install -e ".[dev]"
 make check                # ruff + mypy + pytest
-pytest                    # 454 tests, no GPU or network required
-mypy opendistill          # strict, zero errors on 40 modules
+pytest                    # 482 tests, no GPU or network required
+mypy opendistill          # strict, zero errors on 42 modules
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, strict type checking, the suite on

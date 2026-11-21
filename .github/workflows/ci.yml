@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: the workflow only needs to read the repository.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -43,3 +47,32 @@ jobs:
           /tmp/od-venv/bin/opendistill --format json init /tmp/od-project > /tmp/init.json
           python -c "import json;d=json.load(open('/tmp/init.json'));assert d['ok'] is True"
           /tmp/od-venv/bin/opendistill --config /tmp/od-project/distill.yaml validate
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit build twine
+          pip install -e ".[dev]"
+      - name: Static analysis (fail on medium or higher)
+        run: bandit -r opendistill -ll -q
+      - name: Dependency audit (declared runtime dependencies)
+        run: |
+          python - <<'PY'
+          import pathlib, tomllib
+          deps = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["dependencies"]
+          pathlib.Path("/tmp/req.txt").write_text("\n".join(deps))
+          PY
+          pip-audit -r /tmp/req.txt --progress-spinner off
+      - name: Artefact metadata check
+        run: |
+          python -m build --wheel --sdist --outdir dist
+          twine check dist/*

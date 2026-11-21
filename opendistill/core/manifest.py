@@ -33,6 +33,7 @@ from typing import Any, Final
 from opendistill.core.config import PipelineConfig
 from opendistill.core.exceptions import CheckpointError, OpenDistillError
 from opendistill.core.logging import get_logger
+from opendistill.core.redaction import redact_mapping, redact_secrets
 
 __all__ = [
     "MANIFEST_FILENAME",
@@ -278,7 +279,9 @@ class RunManifest:
                 "status": status,
                 "finished_at": utc_now_iso(),
                 "duration_s": round(time.monotonic() - started, 3),
-                "error": error,
+                # Error text can quote a provider body; never persist a
+                # credential-shaped string into the audit trail.
+                "error": redact_secrets(error) if error else error,
             }
         )
         self.touch()
@@ -507,4 +510,5 @@ def error_record(exc: BaseException) -> dict[str, Any]:
         payload = exc.to_dict()
     else:
         payload = {"error": type(exc).__name__, "message": str(exc)}
-    return payload
+    redacted = redact_mapping(payload)
+    return redacted if isinstance(redacted, dict) else payload

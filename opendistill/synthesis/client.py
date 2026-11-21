@@ -31,6 +31,8 @@ import httpx
 
 from opendistill.core.exceptions import ConfigError, SynthesisError
 from opendistill.core.logging import get_logger
+from opendistill.core.redaction import redact_secrets
+from opendistill.core.version import __version__
 
 __all__ = [
     "NON_RETRYABLE_STATUS_CODES",
@@ -44,6 +46,16 @@ __all__ = [
 ]
 
 _log = get_logger("synthesis.client")
+
+#: Hard cap on a single completion payload. A hostile or misconfigured
+#: gateway can return an unbounded body; reading it whole would be a cheap
+#: memory-exhaustion vector. 32 MiB is far above any legitimate completion.
+MAX_RESPONSE_BYTES: Final[int] = 32 * 1024 * 1024
+
+#: Hosts for which plain HTTP is acceptable (loopback only).
+_LOOPBACK_HOSTS: Final[frozenset[str]] = frozenset(
+    {"localhost", "127.0.0.1", "::1"}
+)
 
 #: Statuses worth retrying: rate limiting and transient server failures.
 RETRYABLE_STATUS_CODES: Final[frozenset[int]] = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
@@ -140,7 +152,8 @@ def compute_backoff_delay(
     if isinstance(rand, random.Random):
         draw = rand.random()
     elif rand is None:
-        draw = random.random()
+        # Not a security decision: this only spreads retry storms in time.
+        draw = random.random()  # nosec B311
     else:
         draw = float(rand)
     base = initial_delay_s * (multiplier ** min(attempt, 16))
@@ -177,6 +190,27 @@ class ClientStats:
             "reasoning_tokens": self.reasoning_tokens,
             "total_sleep_s": round(self.total_sleep_s, 3),
         }
+
+
+def _require_tls(base_url: str) -> None:
+    """Refuse to send the API key over plaintext HTTP to a remote host.
+
+    Loopback stays allowed so local mock servers and self-hosted proxies work;
+    anything else must be HTTPS, otherwise the bearer token crosses the first
+    network hop in clear text.
+    """
+    from urllib.parse import urlsplit
+
+    parsed = urlsplit(base_url)
+    if parsed.scheme == "https":
+        return
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme == "http" and host in _LOOPBACK_HOSTS:
+        return
+    raise ConfigError(
+        f"synthesis.api_base_url must use https for remote hosts, got: {base_url!r}",
+        hint="use https://api.deepseek.com, or a loopback address (http://localhost:PORT)",
+    )
 
 
 def _parse_retry_after(value: str | None) -> float | None:
@@ -220,7 +254,7 @@ class DeepSeekClient:
         max_tokens: int = 8192,
         transport: httpx.AsyncBaseTransport | None = None,
         headers: Mapping[str, str] | None = None,
-        user_agent: str = "opendistill/1.0",
+        user_agent: str = f"opendistill/{__version__}",
         rng: random.Random | None = None,
     ) -> None:
         if not api_key:
@@ -230,12 +264,14 @@ class DeepSeekClient:
             )
         if concurrency < 1:
             raise ValueError("concurrency must be >= 1")
+        _require_tls(base_url)
         self.model = model
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
         self.retry = retry or RetryPolicy()
-        self._rng = rng or random.Random()
+        # Jitter source only; never used to derive tokens or keys.
+        self._rng = rng or random.Random()  # nosec B311
         self._semaphore = asyncio.Semaphore(concurrency)
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
@@ -342,12 +378,24 @@ class DeepSeekClient:
 
                 if status in NON_RETRYABLE_STATUS_CODES or status >= 400:
                     self.stats.fatal_errors += 1
-                    snippet = response.text[:500]
+                    # Error bodies are third-party text and may echo the request
+                    # (including credentials): redact before they reach stderr,
+                    # a log file or manifest.json.
+                    snippet = redact_secrets(response.text[:500])
                     raise SynthesisError(
                         f"teacher API returned HTTP {status}: {snippet}",
                         status_code=status,
                         hint=_status_hint(status),
                         details={"attempt": attempt + 1},
+                    )
+
+                if len(response.content) > MAX_RESPONSE_BYTES:
+                    self.stats.fatal_errors += 1
+                    raise SynthesisError(
+                        "teacher API response exceeds the safety limit: "
+                        f"{len(response.content)} bytes > {MAX_RESPONSE_BYTES}",
+                        hint="lower synthesis.max_tokens or check synthesis.api_base_url",
+                        details={"bytes": len(response.content)},
                     )
 
                 try:
@@ -359,7 +407,10 @@ class DeepSeekClient:
                     last_error = SynthesisError(
                         f"teacher API returned malformed JSON: {exc}",
                         hint="a proxy or gateway may be interfering with the API response",
-                        details={"attempt": attempt + 1, "body_prefix": response.text[:200]},
+                        details={
+                            "attempt": attempt + 1,
+                            "body_prefix": redact_secrets(response.text[:200]),
+                        },
                     )
                     if attempt + 1 >= attempts_allowed:
                         break

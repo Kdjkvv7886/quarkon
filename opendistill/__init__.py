@@ -24,8 +24,6 @@ The package version follows PEP 440 and is also written to every manifest.
 
 from __future__ import annotations
 
-__version__ = "1.1.0"
-
 from opendistill.core.config import (
     CONFIG_VERSION,
     DEFAULT_BASE_MODEL,
@@ -71,6 +69,7 @@ from opendistill.core.manifest import (
     hash_json,
     verify_artifact,
 )
+from opendistill.core.version import __version__
 from opendistill.core.workspace import WorkspaceLayout
 from opendistill.engine import PHASES, DistillationEngine, PhaseReport, PipelineResult
 from opendistill.export.gguf import QUANTIZATION_METHODS, GGUFArtifact, GGUFExporter

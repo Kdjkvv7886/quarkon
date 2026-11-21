@@ -31,7 +31,9 @@ import os
 import platform
 import re
 import shutil
-import subprocess
+
+# subprocess is used for one fixed probe (nvidia-smi) with an argument list.
+import subprocess  # nosec B404
 import sys
 import time
 from collections.abc import Mapping
@@ -177,7 +179,8 @@ def _probe_nvidia_smi() -> tuple[str, float] | None:
     if executable is None:
         return None
     try:
-        completed = subprocess.run(
+        # Fixed argument list, no shell, no user-controlled command.
+        completed = subprocess.run(  # nosec B603
             [
                 executable,
                 "--query-gpu=name,memory.total",
@@ -223,7 +226,12 @@ def _total_ram_gb() -> float | None:
 
             status = _MemoryStatus()
             status.dwLength = ctypes.sizeof(_MemoryStatus)
-            kernel32 = ctypes.windll.kernel32
+            # ``windll`` exists only on Windows; the lookup keeps the module
+            # importable and type-checkable on every platform.
+            windll = getattr(ctypes, "windll", None)
+            if windll is None:  # pragma: no cover - non-Windows
+                return None
+            kernel32 = windll.kernel32
             if kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
                 return float(status.ullTotalPhys) / 1024**3
             return None

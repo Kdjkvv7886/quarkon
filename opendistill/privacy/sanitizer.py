@@ -101,7 +101,8 @@ class EntityKind(str, Enum):
     CARD = "card"
     IBAN = "iban"
     IP = "ip"
-    SECRET = "secret"
+    # Enum label, not a credential.
+    SECRET = "secret"  # nosec B105
 
 
 DEFAULT_ENTITIES: Final[tuple[EntityKind, ...]] = (
@@ -158,9 +159,12 @@ _CITY_STATE_ZIP_RE: Final[re.Pattern[str]] = re.compile(
 _HONORIFIC_PERSON_RE: Final[re.Pattern[str]] = re.compile(
     r"\b(?:Mr|Mrs|Ms|Dr|Prof|Mx)\.?\s+([A-Z][a-z][A-Za-z'-]+(?:\s+[A-Z][a-z][A-Za-z'-]+)?)"
 )
+#: The case-insensitive flag is scoped to the trigger word ONLY. Applying ``(?i)``
+#: to the whole pattern makes the name group match ordinary lowercase pairs such
+#: as "user request for", which silently corrupted prompts and training data.
 _NAME_CONTEXT_RE: Final[re.Pattern[str]] = re.compile(
-    r"(?i)\b(?:name|customer|client|user|employee|contact|patient|student)\b"
-    r"(?:\s+(?:is|of|for))?:?\s+"
+    r"(?i:\b(?:name|customer|client|user|employee|contact|patient|student)\b)"
+    r"(?:\s+(?i:is|of|for))?:?\s+"
     r"([A-Z][a-z][A-Za-z'-]+\s+[A-Z][a-z][A-Za-z'-]+)"
 )
 

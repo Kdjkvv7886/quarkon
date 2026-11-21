@@ -15,6 +15,17 @@ venv/
 .coverage
 htmlcov/
 
+# Credentials and local environment (never commit these)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+secrets.*
+.netrc
+.pypirc
+*.log
+
 # OpenDistill runtime artifacts (data is reproducible from distill.yaml + DEEPSEEK_API_KEY)
 .workspace/
 *.manifest.json

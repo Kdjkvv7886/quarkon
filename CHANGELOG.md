@@ -4,6 +4,56 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-21
+
+Security hardening from the pre-release audit. No public API break.
+
+### Security
+
+- **Credential redaction in diagnostics.** Provider/gateway error bodies are
+  passed through `opendistill.core.redaction.redact_secrets` before they reach an
+  exception message, stderr, the log file or `manifest.json`, so an upstream error
+  that echoes an API key can no longer persist it.
+- **TLS for the teacher API.** `synthesis.api_base_url` must be `https://` for
+  remote hosts; plain HTTP is accepted only for loopback. Enforced in config *and*
+  in `DeepSeekClient` (defence in depth), so the bearer token never travels in
+  clear text.
+- **Response-size cap.** Completions larger than 32 MiB are rejected before they
+  are parsed (memory-exhaustion guard against a hostile or broken gateway).
+- **Tokenizer pinned to the checkpoint revision.** `AutoTokenizer.from_pretrained`
+  now receives the resolved commit hash, closing a supply-chain gap where the
+  weights were pinned but the tokenizer (special tokens, chat template) was not.
+- **Broadened pickle ban.** The adapter guard now rejects any pickle-family file
+  anywhere in the adapter directory (`.bin`, `.pkl`, `.pt`, `.pth`, `.ckpt`,
+  `.joblib`, ...), not just four known filenames.
+- **CI least privilege + security job.** The workflow runs with
+  `permissions: contents: read`; a `security` job runs Bandit (fail on medium+),
+  `pip-audit` on the declared runtime dependencies and `twine check` on the
+  artefacts. Dependabot tracks pip and GitHub Actions updates.
+- Added `SECURITY.md` (threat model, controls, reporting) and `.gitignore`
+  patterns for credentials.
+
+### Changed
+
+- Package version is now defined once in `opendistill/core/version.py` and
+  imported everywhere; a test asserts it matches `pyproject.toml` and the
+  changelog.
+- `TrainerBackend.tokenizer()` accepts `revision=`; custom backends must add the
+  keyword or accept `**kwargs`.
+- `make typecheck-linux` runs mypy with `--platform linux`, reproducing what CI
+  checks (this caught two platform-only findings before the release).
+
+### Fixed
+
+- **Sanitizer no longer mangles ordinary wording.** An unscoped `(?i)` in
+  the name-context pattern made any two lowercase words after "user",
+  "customer", "contact" etc. look like a person ("user request for" ->
+  "user <surrogate>"). Prompts and training data were corrupted and
+  duplicate-detection could starve a run below its target. The flag is
+  now scoped to the trigger word and regression tests pin the behaviour.
+- mypy failed on Linux CI (`ctypes.windll` attribute, missing optional
+  `huggingface_hub` stub) although it passed on Windows.
+
 ## [1.1.0] - 2026-11-21
 
 Audit upgrade patch: privacy, reasoning-budget routing, Micro-LoRA standard and a

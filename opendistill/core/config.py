@@ -280,6 +280,23 @@ class SynthesisConfig(_StrictModel):
         le=1.0,
         description="Uniform jitter added as ratio * delay (decorrelates retry storms).",
     )
+    @field_validator("api_base_url")
+    @classmethod
+    def _require_tls(cls, value: str) -> str:
+        """Reject plaintext transport for the teacher key (loopback is fine)."""
+        from urllib.parse import urlsplit
+
+        parsed = urlsplit(value)
+        if parsed.scheme == "https":
+            return value
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme == "http" and host in {"localhost", "127.0.0.1", "::1"}:
+            return value
+        raise ValueError(
+            "api_base_url must use https for remote hosts; plain http is "
+            "allowed only for localhost/127.0.0.1"
+        )
+
     temperature: float = Field(default=1.0, ge=0.0, le=2.0)
     top_p: float = Field(default=1.0, ge=0.0, le=1.0)
     max_tokens: int = Field(default=8192, ge=64, le=65536)

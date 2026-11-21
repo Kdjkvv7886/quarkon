@@ -97,6 +97,13 @@ _FORBIDDEN_ADAPTER_FILES: Final[tuple[str, ...]] = (
     "pytorch_model.bin",
     "adapter_model.pkl",
     "adapter_model.pickle",
+    "training_args.bin",
+)
+
+#: Any file with these suffixes is a pickle-family payload and must never
+#: ship inside an adapter directory (loading it executes arbitrary code).
+_FORBIDDEN_ADAPTER_SUFFIXES: Final[frozenset[str]] = frozenset(
+    {".bin", ".pkl", ".pickle", ".pt", ".pth", ".ckpt", ".h5", ".joblib", ".msgpack"}
 )
 
 
@@ -341,7 +348,8 @@ def build_rendered_dataset(
             hint="raise train.max_seq_length or inspect the dataset with 'opendistill validate'",
         )
     indices = list(range(len(examples)))
-    random.Random(seed).shuffle(indices)
+    # The split must be reproducible, not unpredictable: seeded RNG.
+    random.Random(seed).shuffle(indices)  # nosec B311
     eval_size = int(len(indices) * eval_fraction)
     eval_indices = set(indices[:eval_size])
     train_examples = [examples[i] for i in range(len(examples)) if i not in eval_indices]
@@ -543,10 +551,20 @@ def enforce_safetensors_only(adapter_dir: Path) -> Path:
     refuses to publish an adapter that is not ``adapter_model.safetensors``.
     """
     directory = Path(adapter_dir)
-    forbidden = [name for name in _FORBIDDEN_ADAPTER_FILES if (directory / name).is_file()]
+    # Any pickle-family payload is code execution on load, not just the four
+    # historical filenames: scan the whole adapter directory by suffix.
+    forbidden = [
+        str(path.relative_to(directory))
+        for path in sorted(directory.rglob("*"))
+        if path.is_file()
+        and (
+            path.name in _FORBIDDEN_ADAPTER_FILES
+            or path.suffix.lower() in _FORBIDDEN_ADAPTER_SUFFIXES
+        )
+    ]
     if forbidden:
         raise TrainingError(
-            "adapter was serialised with pickle, which is not allowed: "
+            "adapter directory contains pickled payloads, which are not allowed: "
             + ", ".join(forbidden),
             hint="save with safe_serialization=True (Unsloth/TRL do this by default)",
             details={"adapter_dir": str(directory), "files": forbidden},
@@ -584,7 +602,7 @@ class TrainerBackend(abc.ABC):
         """Train and save the adapter; return backend details."""
 
     @abc.abstractmethod
-    def tokenizer(self) -> PreTrainedTokenizerBase:
+    def tokenizer(self, *, revision: str | None = None) -> PreTrainedTokenizerBase:
         """Tokenizer used for rendering (must be available before ``fit``)."""
 
 
@@ -596,12 +614,17 @@ class UnslothBackend(TrainerBackend):
         self._tokenizer: PreTrainedTokenizerBase | None = None
         self._model: Any = None
 
-    def tokenizer(self) -> PreTrainedTokenizerBase:
+    def tokenizer(self, *, revision: str | None = None) -> PreTrainedTokenizerBase:
         if self._tokenizer is None:
             from transformers import AutoTokenizer
 
             try:
-                tokenizer = AutoTokenizer.from_pretrained(self.config.train.base_model)
+                # Pin the tokenizer exactly like the weights: an unpinned
+                # download would let a moved upstream tag inject special
+                # tokens or a chat template into the run.
+                tokenizer = AutoTokenizer.from_pretrained(
+                    self.config.train.base_model, revision=revision
+                )
             except OSError as exc:
                 raise TrainingError(
                     f"cannot load tokenizer for {self.config.train.base_model}: {exc}",
@@ -802,7 +825,10 @@ class UnslothTrainer:
             else detect_gpu_env()
         )
         template_name = train_cfg.resolved_chat_template()
-        tokenizer = self.backend.tokenizer()
+        # Resolve the checkpoint revision first so the tokenizer and the model
+        # weights are pinned to the same commit (supply-chain integrity).
+        revision = _resolve_revision(train_cfg.base_model)
+        tokenizer = self.backend.tokenizer(revision=revision)
         self._emit("training.render.start", samples=len(samples))
         train_set, eval_set = build_rendered_dataset(
             samples,
@@ -822,7 +848,6 @@ class UnslothTrainer:
         adapter_dir = self.adapter_dir
         adapter_dir.mkdir(parents=True, exist_ok=True)
         metrics_path = self.workspace / METRICS_FILENAME
-        revision = _resolve_revision(train_cfg.base_model)
         started = time.monotonic()
         with MetricRecorder(metrics_path, started=started) as recorder:
             recorder.log(
@@ -922,5 +947,10 @@ def _resolve_revision(model_id: str) -> str | None:
 
         info = HfApi().model_info(model_id)
         return str(getattr(info, "sha", None) or "") or None
-    except Exception:
+    except Exception as exc:
+        # An unresolved revision is not fatal, but it weakens the audit trail:
+        # record why instead of silently claiming a pinned checkpoint.
+        _log.warning(
+            "training.revision_unresolved", model=model_id, error=type(exc).__name__
+        )
         return None

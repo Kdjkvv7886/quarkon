@@ -220,6 +220,32 @@ class TestEntitySelection:
         result = sanitizer.sanitize("ref 4539578912345678 end")
         assert "4539578912345678" not in result.text
 
+    def test_ordinary_task_wording_is_not_mistaken_for_a_person(self) -> None:
+        # Regression: an unscoped (?i) made "user request for" look like a name
+        # and replaced it, corrupting every generated prompt.
+        sanitizer = CleanRoomSanitizer()
+        for text in (
+            "Invent a realistic user request for this task.",
+            "Create a concrete, difficult instance of this task.",
+            "Please review the attached invoice and return the total.",
+            "Answer a quantitative question with a short verifiable result.",
+        ):
+            result = sanitizer.sanitize(text)
+            assert result.text == text, result.text
+            assert result.total == 0
+
+    def test_name_context_still_detects_mixed_case_names(self) -> None:
+        sanitizer = CleanRoomSanitizer()
+        result = sanitizer.sanitize("Customer John Smith called about the delivery.")
+        assert "John Smith" not in result.text
+        assert "Customer" in result.text
+
+    def test_name_context_keyword_is_case_insensitive(self) -> None:
+        sanitizer = CleanRoomSanitizer()
+        result = sanitizer.sanitize("USER Alice Johnson reported a bug.")
+        assert "Alice Johnson" not in result.text
+        assert "USER" in result.text
+
 
 class TestChecksumHelpers:
     def test_luhn_helpers(self) -> None:

@@ -226,7 +226,8 @@ class FakeTrainerBackend(TrainerBackend):
         self.calls: list[dict[str, Any]] = []
         self._tokenizer = FakeTokenizer()
 
-    def tokenizer(self) -> Any:
+    def tokenizer(self, *, revision: str | None = None) -> Any:
+        self.tokenizer_revision = revision
         return self._tokenizer
 
     def fit(

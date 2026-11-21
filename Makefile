@@ -10,10 +10,10 @@
 PYTHON ?= python
 CONFIG ?= examples/distill.yaml
 
-.PHONY: install test typecheck lint check clean validate dry-run dist release-check help
+.PHONY: install test typecheck typecheck-linux lint check clean validate dry-run dist release-check help
 
 help:
-	@echo "targets: install test typecheck lint check clean validate dry-run dist release-check"
+	@echo "targets: install test typecheck typecheck-linux lint check clean validate dry-run dist release-check"
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -23,6 +23,11 @@ test:
 
 typecheck:
 	$(PYTHON) -m mypy opendistill
+
+# CI runs mypy on Linux; platform-specific branches (ctypes.windll, /proc) must
+# type-check there too, which a local Windows run cannot prove on its own.
+typecheck-linux:
+	$(PYTHON) -m mypy --platform linux opendistill
 
 lint:
 	$(PYTHON) -m ruff check opendistill tests
