@@ -34,10 +34,21 @@ quarkon --config distill.yaml lint
 The `DEEPSEEK_API_KEY` variable, the YAML schema, the workspace layout and the
 manifest format are unchanged.
 
+### Fixed
+
+- **Refill race that could end a run below `target_samples`.** A worker released
+  its acceptance slot *before* appending the refill for a rejected unit, so
+  another worker could observe "no work in flight", exit, and leave the refill
+  unprocessed. The refill is now enqueued while the slot is still held.
+- **Refills no longer abandon a seed when a generation already has a ledger
+  row.** Generations occupied by `pending` rows (cancelled run) or `rejected`
+  rows (earlier attempt) are skipped instead of being treated as the end of the
+  seed. Regression test added.
+
 ### Verified
 
 - `ruff` clean, `mypy --strict` clean (Windows and `--platform linux`),
-  `pytest` 482 passed, `bandit -ll` 0 findings, `twine check` PASSED.
+  `pytest` 483 passed, `bandit -ll` 0 findings, `twine check` PASSED.
 - CI matrix 3.10/3.11/3.12 plus the security job green after the rename.
 
 ## [1.1.1] - 2026-11-21

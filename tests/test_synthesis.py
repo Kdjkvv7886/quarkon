@@ -654,6 +654,53 @@ class TestGenerator:
         ids = [json.loads(line)["id"] for line in (tmp_path / "samples.jsonl").read_text(encoding="utf-8").splitlines()]
         assert len(ids) == len(set(ids)) == 4
 
+    def test_refill_skips_generations_with_existing_rows(self, tmp_path: Path) -> None:
+        """A refill must advance past generations that already have ledger rows.
+
+        A cancelled run leaves ``pending`` rows and earlier attempts leave
+        ``rejected`` rows; treating the first occupied generation as the end of
+        the seed abandoned the run below ``target_samples``.
+        """
+        server = TeacherServer()
+        generator, client = make_generator(
+            server, synthesis={"target_samples": 6, "concurrency": 1}
+        )
+        config = generator.config
+        from quarkon.synthesis.generator import GenerationPlan, derive_unit_id
+
+        async def run() -> Any:
+            try:
+                store = generator._store_or_create(tmp_path)
+                # Occupy generations 1 and 2 of seed 0, as a cancelled run would.
+                for generation in (1, 2):
+                    unit_id = derive_unit_id(0, generation)
+                    _, attempt = store.reserve(unit_id)
+                    store.record_outcome(
+                        unit_id,
+                        status="rejected",
+                        rule="duplicate",
+                        reason="near-duplicate of a stored sample",
+                        attempt=attempt,
+                    )
+                unit = GenerationPlan(
+                    unit_id=derive_unit_id(0, 0),
+                    seed_index=0,
+                    generation=0,
+                    prompt="seed 0",
+                )
+                generator._queue = []
+                generator._queued = set()
+                await generator._enqueue_refill(unit, store, generator._covered_units(store))
+                queued = [plan.generation for plan in generator._queue]
+                store.close()
+                return queued
+            finally:
+                await client.aclose()
+
+        queued_generations = asyncio.run(run())
+        assert queued_generations == [3], queued_generations
+        _ = config
+
     def test_resume_continues_after_partial_run(self, tmp_path: Path) -> None:
         config = PipelineConfig.from_dict(
             make_config_dict(synthesis={"target_samples": 6, "concurrency": 1})

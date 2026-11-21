@@ -835,10 +835,15 @@ class SampleGenerator:
                 except BaseException as exc:
                     self._fatal = exc
                     return
+                else:
+                    if outcome == "rejected":
+                        # Enqueue BEFORE releasing the slot. Releasing first opens
+                        # a window in which another worker observes "no work in
+                        # flight", exits, and the refill is never processed - the
+                        # run then ends below target_samples despite budget left.
+                        await self._enqueue_refill(unit, store, covered)
                 finally:
                     await self._release_slot()
-                if outcome == "rejected":
-                    await self._enqueue_refill(unit, store, covered)
 
         worker_count = min(self.synthesis.concurrency, len(queue))
         workers = [
@@ -932,32 +937,39 @@ class SampleGenerator:
         The unit is appended to the shared list that ``queue_iter`` is draining,
         which is safe in a single-threaded event loop: ``next()`` only runs
         between awaits.
+
+        Generations that already exist in the ledger are skipped rather than
+        treated as fatal: a cancelled run leaves ``pending`` rows and earlier
+        attempts leave ``rejected`` rows, so stopping at the first occupied
+        generation would abandon the seed with budget still available.
         """
         generation = unit.generation + 1
-        key = (unit.seed_index, generation)
         limit = self.synthesis.target_samples * MAX_UNIT_INFLATION
-        refill_id = derive_unit_id(unit.seed_index, generation)
-        if refill_id in self._queued:
-            # Already scheduled (the plan pre-generates several generations).
-            covered.add(key)
-            return
-        covered.add(key)
-        if store.has_unit(refill_id) or len(covered) >= limit:
-            return
-        self._queued.add(refill_id)
         seeds = self.seed_prompts()
-        prompts = build_seed_prompts(
-            self.config.task.objective,
-            [seeds[unit.seed_index]],
-            1,
-            generation=generation,
-            language=self.config.task.language,
-            extra_instructions=self.synthesis.extra_instructions,
-        )
-        prompt, _ = prompts[0]
+        prompt = ""
+        while generation < limit:
+            key = (unit.seed_index, generation)
+            refill_id = derive_unit_id(unit.seed_index, generation)
+            covered.add(key)
+            if refill_id not in self._queued and not store.has_unit(refill_id):
+                prompts = build_seed_prompts(
+                    self.config.task.objective,
+                    [seeds[unit.seed_index]],
+                    1,
+                    generation=generation,
+                    language=self.config.task.language,
+                    extra_instructions=self.synthesis.extra_instructions,
+                )
+                prompt = prompts[0][0]
+                break
+            generation += 1
+        if not prompt:
+            return
+        refill_id = derive_unit_id(unit.seed_index, generation)
+        self._queued.add(refill_id)
         self._queue.append(
             GenerationPlan(
-                unit_id=derive_unit_id(unit.seed_index, generation),
+                unit_id=refill_id,
                 seed_index=unit.seed_index,
                 generation=generation,
                 prompt=prompt,
@@ -966,7 +978,7 @@ class SampleGenerator:
         _log.debug(
             "synthesis.refill_queued",
             rejected_unit=unit.unit_id,
-            refill=derive_unit_id(unit.seed_index, generation),
+            refill=refill_id,
         )
 
     # ---------------------------------------------------------- per unit
