@@ -1,0 +1,49 @@
+# OpenDistill development tasks.
+#
+#   make install     install the package in editable mode with dev extras
+#   make test        run the test suite (no GPU or network required)
+#   make typecheck   run mypy in strict mode
+#   make lint        run ruff
+#   make check       typecheck + lint + test
+#   make clean       remove caches and build artefacts
+
+PYTHON ?= python
+CONFIG ?= examples/distill.yaml
+
+.PHONY: install test typecheck lint check clean validate dry-run dist release-check help
+
+help:
+	@echo "targets: install test typecheck lint check clean validate dry-run dist release-check"
+
+install:
+	$(PYTHON) -m pip install -e ".[dev]"
+
+test:
+	$(PYTHON) -m pytest -q
+
+typecheck:
+	$(PYTHON) -m mypy opendistill
+
+lint:
+	$(PYTHON) -m ruff check opendistill tests
+
+check: typecheck lint test
+
+validate:
+	$(PYTHON) -m opendistill --config $(CONFIG) validate
+
+dry-run:
+	$(PYTHON) -m opendistill --config $(CONFIG) synthesize --dry-run
+
+dist:
+	$(PYTHON) -m build --wheel --sdist --outdir dist
+
+# Everything a tag must pass: lint, types, tests, then a clean artefact build.
+release-check: check dist
+	@echo "release artefacts:"
+	@ls -l dist
+
+clean:
+	rm -rf build dist .pytest_cache .mypy_cache .ruff_cache .workspace
+	find . -name '__pycache__' -type d -prune -exec rm -rf {} +
+	find . -name '*.egg-info' -type d -prune -exec rm -rf {} +

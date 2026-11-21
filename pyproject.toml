@@ -1,0 +1,104 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opendistill"
+version = "1.1.0"
+description = "Production-grade pipeline for distilling reasoning models into compact, self-hosted edge models."
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "OpenDistill Maintainers" }]
+keywords = ["distillation", "reasoning", "lora", "qlora", "deepseek", "gguf", "ollama", "edge-ai"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pydantic>=2.7,<3",
+    "PyYAML>=6.0",
+    "httpx>=0.27,<1",
+    "click>=8.1,<9",
+    "typing-extensions>=4.10; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+# Fine-tuning stack. Heavy (CUDA); install explicitly with `pip install 'opendistill[train]'`.
+train = [
+    "unsloth>=2024.10",
+    "trl>=0.9",
+    "transformers>=4.44",
+    "datasets>=2.20",
+    "accelerate>=0.33",
+    "torch>=2.3",
+]
+# Test tooling used by `make check`.
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "mypy>=1.10",
+    "ruff>=0.5",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.urls]
+Homepage = "https://github.com/Kdjkvv7886/opendistill"
+Repository = "https://github.com/Kdjkvv7886/opendistill"
+Issues = "https://github.com/Kdjkvv7886/opendistill/issues"
+Changelog = "https://github.com/Kdjkvv7886/opendistill/blob/main/CHANGELOG.md"
+
+[project.scripts]
+opendistill = "opendistill.cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["opendistill"]
+
+[tool.hatch.build.targets.sdist]
+include = ["opendistill", "tests", "examples", "README.md", "LICENSE", "ARCHITECTURE.md"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error::DeprecationWarning:opendistill.*"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+disallow_untyped_decorators = false
+exclude = ["build/", "dist/"]
+
+[[tool.mypy.overrides]]
+module = ["yaml", "datasets.*", "trl.*", "transformers.*", "unsloth.*", "peft.*", "torch.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "ASYNC", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+# The CLI group is defined before the commands are imported (the decorators need
+# it), which is a deliberate late import; __all__ is grouped by layer for readers.
+"opendistill/cli/main.py" = ["E402"]
+"opendistill/__init__.py" = ["RUF022"]
+# Exception aliases deliberately avoid shadowing builtins (EnvironmentError,
+# pydantic's ValidationError); the trailing underscore is the project convention.
+"opendistill/core/exceptions.py" = ["N801", "N818"]

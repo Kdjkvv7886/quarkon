@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "description": "Shape the teacher answer must satisfy for the formula-repair task.",
+  "properties": {
+    "formula": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Excel formula without a leading '='."
+    },
+    "explanation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One or two sentences explaining why the formula is correct."
+    },
+    "functions_used": {
+      "type": "array",
+      "items": {"type": "string"},
+      "maxItems": 8,
+      "description": "Excel functions referenced by the formula."
+    }
+  },
+  "required": ["formula", "explanation"],
+  "additionalProperties": false
+}

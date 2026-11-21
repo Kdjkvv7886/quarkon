@@ -1,0 +1,84 @@
+# OpenDistill example project
+#
+#   export DEEPSEEK_API_KEY=sk-...
+#   opendistill --config examples/distill.yaml validate
+#   opendistill --config examples/distill.yaml synthesize --dry-run
+#   opendistill --config examples/distill.yaml run
+#
+# Relative paths resolve against this file's directory.
+version: 1
+
+task:
+  name: formula-repair
+  objective: >-
+    Given a natural-language description of a spreadsheet calculation, return
+    the single Excel formula that produces the described result, with the
+    reasoning that justifies the choice of functions.
+  system_prompt: ""
+  seed_samples: seeds.jsonl
+  output_schema_file: schema.json
+  language: en
+
+privacy:
+  # Clean-room protocol: replace PII with realistic surrogates before the API call.
+  enabled: true
+  # person | email | phone | address | card | iban | ip | secret
+  entities: [person, email, phone, address, card, iban, ip, secret]
+  custom_names: []
+  salt: ""
+  purge_after_run: true
+
+synthesis:
+  teacher_model: deepseek-reasoner
+  target_samples: 500
+  concurrency: 8
+  max_retries: 6
+  request_timeout_s: 120.0
+  backoff_initial_s: 1.0
+  backoff_max_s: 60.0
+  backoff_jitter_ratio: 0.5
+  # auto | tier_0_direct | tier_1_micro | tier_2_deep (controls the <think> budget)
+  cot_tier: auto
+  temperature: 1.0
+  top_p: 1.0
+  max_tokens: 8192
+  api_key_env: DEEPSEEK_API_KEY
+  prompt_style: zero-shot
+  few_shot_examples: 2
+  extra_instructions: "Prefer modern functions (XLOOKUP, LET, FILTER) over legacy ones."
+
+train:
+  base_model: unsloth/DeepSeek-R1-Distill-Qwen-1.5B
+  chat_template: auto
+  load_in_4bit: true
+  max_seq_length: 4096
+  lora_rank: 16
+  lora_alpha: 16
+  lora_dropout: 0.0
+  learning_rate: 0.0002
+  epochs: 3
+  batch_size: 2
+  gradient_accumulation_steps: 4
+  warmup_ratio: 0.03
+  lr_scheduler_type: linear
+  max_grad_norm: 1.0
+  seed: 3407
+  optim: adamw_8bit
+  gradient_checkpointing: true
+  packing: false
+  min_cot_tokens: 0
+  eval_fraction: 0.05
+  save_steps: 0
+  logging_steps: 5
+  min_samples: 16
+  min_free_vram_gb: 6.0
+
+deploy:
+  quantization: q4_k_m
+  runtime: ollama
+  model_name: ""
+  ollama_base_url: http://localhost:11434
+  models_dir: ./models
+  request_timeout_s: 30.0
+  upload: true
+  smoke_test: true

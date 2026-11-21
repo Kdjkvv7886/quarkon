@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OpenDistill runtime artifacts (data is reproducible from distill.yaml + DEEPSEEK_API_KEY)
+.workspace/
+*.manifest.json
+manifest.json
+metrics.json
+samples.jsonl
+samples.sqlite3
+checkpoints/
+gguf/

@@ -1,0 +1,10 @@
+{"prompt": "Sum the values in column B where column A equals the region in cell E2."}
+{"prompt": "Return the second highest non-empty score from the range C2:C40."}
+{"prompt": "Look up an employee's department from the roster sheet by their ID."}
+{"prompt": "Count working days between two dates, excluding the holidays listed in H2:H12."}
+{"prompt": "Concatenate the first letter of first name and the full surname, uppercase."}
+{"prompt": "Flag rows where the delivery date is later than the promised date plus two days."}
+{"prompt": "Compute a rolling 3-month average of revenue, ignoring blank months."}
+{"prompt": "Build a formula that returns the category with the highest total spend."}
+{"prompt": "Extract the domain part of an email address in a single expression."}
+{"prompt": "Return TRUE when a value appears in a list only once, otherwise FALSE."}
