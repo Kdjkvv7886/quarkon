@@ -9,8 +9,9 @@ executed on this machine; anything not verified says so explicitly.
 |---|---|
 | Version | `1.1.1` (defined once in `opendistill/core/version.py`) |
 | Repository | <https://github.com/Kdjkvv7886/opendistill> (private) |
-| Commits | `main` (initial release + security hardening) |
+| Commits | `main` at `373dd3d` (initial release + security hardening) |
 | Tags | `v1.1.0`, `v1.1.1` |
+| CI | green: <https://github.com/Kdjkvv7886/opendistill/actions/runs/44907489626> |
 | Artefacts | `opendistill-1.1.1-py3-none-any.whl`, `opendistill-1.1.1.tar.gz` |
 
 ## Verified locally
@@ -34,6 +35,7 @@ executed on this machine; anything not verified says so explicitly.
 | SDK surface | installed wheel | `CleanRoomSanitizer`, `CoTRouter`, `run_preflight_checks`, `ALL_LINEAR_MODULES` importable |
 | Pre-flight | `opendistill lint` | ~80-100 ms; correctly blocks this host (4 GB VRAM < 6 GB requirement) |
 | Privacy | end-to-end test | original PII absent from API payload and dataset; vault purged |
+| CI (remote) | GitHub Actions run 44907489626 | 4/4 jobs green (3.10, 3.11, 3.12, security) |
 
 ## CI (GitHub Actions)
 
@@ -45,6 +47,11 @@ executed on this machine; anything not verified says so explicitly.
   dependencies, `twine check` on both artefacts.
 - Workflow-level `permissions: contents: read`; Dependabot tracks pip and GitHub
   Actions weekly.
+- Actions are on `actions/checkout@v7` and `actions/setup-python@v7` (Node 20
+  deprecation resolved); the Dependabot PR for `setup-python` was merged after a
+  green matrix, the `checkout` bump was applied directly because both PRs touch
+  the same workflow file.
+- Last run: 3.10 / 3.11 / 3.12 / security all green.
 
 ## Not verified here (requires infrastructure this machine does not have)
 
