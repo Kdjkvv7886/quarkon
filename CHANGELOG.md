@@ -4,6 +4,59 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-11-21
+
+A corporate-experience release: a graphical wizard for non-technical users,
+one-command installers, ready-made task templates, cost estimation, audit
+exports, plain-language diagnostics and interface localisation.
+
+### Added
+
+- **Local web interface** (`quarkon ui`, `quarkon launcher`): a four-step wizard
+  in the browser, served from `127.0.0.1` only, protected by a per-session token,
+  built with the standard library (no extra dependency, works offline). It shows
+  progress, plain-language errors with a fix, results and the audit pack.
+- **Installers**: `install.ps1` (Windows; private virtual environment, desktop and
+  Start-menu shortcuts) and `install.sh` (Linux/macOS; `~/.local/bin` link and a
+  desktop entry). No administrator rights required.
+- **Ready-made corporate tasks** (`quarkon templates`): support triage, invoice
+  extraction (with JSON schema), contract review, incident summaries, code
+  review and meeting actions; `--apply` scaffolds a valid project.
+- **Cost estimation** (`quarkon cost`, shown in the wizard before spending):
+  token and attempt estimates with the assumptions spelled out.
+- **Audit exports** (`quarkon audit --export`): JSON or CSV with SHA-256 hashes of
+  every artefact, configuration fingerprint, privacy statistics and compliance
+  statements for procurement and security review.
+- **Plain-language diagnostics** (`quarkon doctor`): every problem printed as
+  *what happened / what it means / how to fix it*, powered by one shared guide
+  used by the CLI, the wizard and the error panel.
+- **Quality preview** (`quarkon preview --samples 3`): look at a few teacher
+  examples before paying for a full dataset.
+- **Localisation**: interface available in 21 languages (European languages,
+  Arabic, Hebrew, Hindi, Chinese Simplified, Japanese, Korean); a roadmap of 37
+  further languages is listed by `quarkon languages`. Russian is intentionally
+  not shipped. `QUARKON_LANG` / `--lang` / saved preference are supported, with a
+  safe English fallback and RTL layout for Arabic and Hebrew.
+- `USER_GUIDE.md`: a non-technical guide (install, four steps, problem table,
+  privacy, FAQ).
+
+### Changed
+
+- Interface and CLI wording for problems now includes an explanation and a fix,
+  not only an error code.
+- `quarkon setup` creates a project interactively; `--samples` overrides the
+  template default.
+
+### Verified
+
+- 510 tests pass (27 new for i18n, corporate helpers, CLI and the GUI server),
+  `mypy --strict` clean on 48 modules, `ruff` clean, `twine check` PASSED.
+- GUI server tested end-to-end over loopback: token gate, static assets,
+  project creation, cost planning, audit export, invalid-step rejection.
+- Not verified here: visual rendering in a real browser and the installers on a
+  clean machine (this host has no browser automation); both are covered by the
+  documented manual acceptance steps.
+
 ## [2.0.0] - 2026-11-21
 
 The project is renamed **Quarkon**. The pipeline, configuration schema, artefacts

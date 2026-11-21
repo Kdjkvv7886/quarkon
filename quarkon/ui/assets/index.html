@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quarkon</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">Q</div>
+      <div>
+        <div class="name">Quarkon</div>
+        <div class="tagline" data-i18n="app.tagline">Distill a reasoning model into a compact model your company can run itself.</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <label class="lang">
+        <span data-i18n="lang.current">Language</span>
+        <select id="locale-select"></select>
+      </label>
+      <span class="version" id="version"></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="setup" data-i18n="nav.setup">Setup</button>
+    <button class="tab" data-tab="run" data-i18n="nav.run">Run</button>
+    <button class="tab" data-tab="help" data-i18n="nav.help">Help</button>
+  </nav>
+
+  <main>
+    <section id="tab-setup" class="panel active">
+      <h2 data-i18n="setup.title">Guided setup</h2>
+      <ol class="steps">
+        <li><span data-i18n="setup.step1">1. Choose the task</span></li>
+        <li><span data-i18n="setup.step2">2. Choose the language</span></li>
+        <li><span data-i18n="setup.step3">3. Set the size</span></li>
+        <li><span data-i18n="setup.step4">4. Check this computer</span></li>
+      </ol>
+
+      <div class="grid">
+        <div class="card">
+          <h3 data-i18n="field.template">Ready-made task</h3>
+          <div id="templates" class="template-list"></div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="field.objective">What should the model learn to do?</h3>
+          <textarea id="objective" rows="5" placeholder="Extract the vendor, invoice number and total from an invoice document."></textarea>
+          <p class="hint" id="objective-hint"></p>
+          <div class="row">
+            <label><span data-i18n="field.samples">Training examples</span>
+              <input id="samples" type="number" min="50" max="10000" step="50" value="300" />
+            </label>
+            <label><span data-i18n="field.language">Language of the examples</span>
+              <select id="data-language">
+                <option value="en">English</option><option value="de">Deutsch</option>
+                <option value="fr">Français</option><option value="es">Español</option>
+                <option value="it">Italiano</option><option value="pl">Polski</option>
+                <option value="uk">Українська</option><option value="ar">العربية</option>
+                <option value="hi">हिन्दी</option><option value="zh-Hans">简体中文</option>
+                <option value="ja">日本語</option><option value="ko">한국어</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="create" class="primary" data-i18n="action.create">Create project</button>
+            <button id="check" data-i18n="action.check_system">Check this computer</button>
+          </div>
+          <div id="setup-result" class="result"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3 data-i18n="cost.title">Estimated cost</h3>
+          <div id="cost" class="cost">-</div>
+          <p class="hint" data-i18n="cost.note"></p>
+        </div>
+        <div class="card">
+          <h3 data-i18n="doctor.title">System check</h3>
+          <div id="doctor" class="findings"></div>
+          <button id="doctor-run" data-i18n="action.check_system">Check this computer</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-run" class="panel">
+      <h2 data-i18n="results.title">Results</h2>
+      <div class="grid">
+        <div class="card status-card">
+          <div class="metric"><span id="dataset-lines">0</span><label>examples</label></div>
+          <div class="metric"><span id="adapter-state">-</span><label>adapter</label></div>
+          <div class="metric"><span id="gguf-count">0</span><label>packaged models</label></div>
+        </div>
+        <div class="card">
+          <h3 id="job-title" data-i18n="status.running">Working...</h3>
+          <div class="actions">
+            <button id="run-synthesize" class="primary" data-i18n="action.synthesize">Generate training data</button>
+            <button id="run-train" data-i18n="action.train">Train the model</button>
+            <button id="run-export" data-i18n="action.export">Package for your servers</button>
+            <button id="cancel">Cancel</button>
+          </div>
+          <div id="error-card" class="error hidden">
+            <h4 data-i18n="error.title">What went wrong</h4>
+            <p id="error-meaning"></p>
+            <h4 data-i18n="error.fix">What to do</h4>
+            <p id="error-fix"></p>
+          </div>
+          <pre id="log" class="log" aria-live="polite"></pre>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3 data-i18n="results.next">Suggested next step</h3>
+          <div id="next-step" class="result"></div>
+        </div>
+        <div class="card">
+          <h3>Audit pack</h3>
+          <p class="hint">Hashes, config fingerprint and compliance notes for security review.</p>
+          <div class="actions">
+            <button id="audit-json">Export JSON</button>
+            <button id="audit-csv">Export CSV</button>
+          </div>
+          <div id="audit-result" class="result"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-help" class="panel">
+      <h2 data-i18n="help.title">Help</h2>
+      <div class="card"><p data-i18n="help.plain"></p></div>
+      <div class="card"><p data-i18n="help.security"></p></div>
+      <div class="card">
+        <h3>Privacy</h3>
+        <ul class="notes"><li data-i18n="privacy.no_telemetry"></li><li data-i18n="privacy.local_first"></li></ul>
+        <ul id="compliance" class="notes"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>

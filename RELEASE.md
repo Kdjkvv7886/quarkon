@@ -21,8 +21,8 @@ executed on this machine; anything not verified says so explicitly.
 | Lint | `ruff check quarkon tests` | clean (0 findings) |
 | Types (Windows) | `mypy quarkon` (strict) | 0 errors, 42 modules |
 | Types (Linux) | `mypy --platform linux quarkon` | 0 errors (CI equivalent) |
-| Tests 3.14 | `pytest tests` | **483 passed** (repeated full runs) |
-| Tests 3.11 | `pytest tests` | 483 passed |
+| Tests 3.14 | `pytest tests` | **510 passed** |
+| Tests 3.11 | `pytest tests` | 510 passed |
 | Static security | `bandit -r quarkon -ll` | 0 findings (all severities suppressed or absent) |
 | Dependency audit | `pip-audit` on declared runtime deps | no known vulnerabilities |
 | Build | `python -m build --wheel --sdist` | wheel + sdist built |

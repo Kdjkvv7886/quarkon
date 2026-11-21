@@ -10,7 +10,7 @@
 PYTHON ?= python
 CONFIG ?= examples/distill.yaml
 
-.PHONY: install test typecheck typecheck-linux lint check clean validate dry-run dist release-check help
+.PHONY: install test typecheck typecheck-linux lint check clean validate dry-run ui doctor dist release-check help
 
 help:
 	@echo "targets: install test typecheck typecheck-linux lint check clean validate dry-run dist release-check"
@@ -36,6 +36,12 @@ check: typecheck lint test
 
 validate:
 	$(PYTHON) -m quarkon --config $(CONFIG) validate
+
+ui:
+	$(PYTHON) -m quarkon ui
+
+doctor:
+	$(PYTHON) -m quarkon doctor
 
 dry-run:
 	$(PYTHON) -m quarkon --config $(CONFIG) synthesize --dry-run

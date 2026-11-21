@@ -27,6 +27,32 @@ print(result.runtime_model)
 
 ---
 
+## For non-technical users
+
+Install once (`install.ps1` on Windows, `install.sh` on Linux/macOS), then run
+`quarkon launcher`. A four-step wizard opens in the browser: choose a task, choose
+a language, set the size, check the computer, then press three buttons. Every
+problem is explained as *what happened / what it means / how to do*. See
+[USER_GUIDE.md](USER_GUIDE.md).
+
+Ready-made corporate tasks:
+
+```bash
+quarkon templates                      # support triage, invoices, contracts, incidents, code review, meetings
+quarkon templates invoice-extract --apply my-project
+quarkon cost --samples 500             # estimate before spending
+quarkon doctor                         # plain-language diagnosis
+quarkon preview --samples 3            # look at example quality first
+quarkon audit --export audit.json      # evidence pack for security review
+```
+
+## Languages
+
+The interface is available in 21 languages (European languages, Arabic, Hebrew,
+Hindi, Chinese, Japanese, Korean; Russian is intentionally not included). Switch
+in the top-right corner of the wizard or with `quarkon languages --set de`. The
+remaining languages are listed in `quarkon languages` as planned.
+
 ## Security
 
 Security-relevant behaviour is documented in [SECURITY.md](SECURITY.md): the

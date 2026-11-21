@@ -282,13 +282,22 @@ def error_envelope(exc: BaseException) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 from quarkon.cli.commands import (
+    audit_command,
+    cost_command,
+    doctor_command,
     export_command,
     init_command,
     inspect_command,
+    languages_command,
+    launcher_command,
     lint_command,
+    preview_command,
+    setup_command,
     status_command,
     synthesize_command,
+    templates_command,
     train_command,
+    ui_command,
     validate_command,
 )
 from quarkon.cli.commands import (
@@ -296,6 +305,15 @@ from quarkon.cli.commands import (
 )
 
 _COMMANDS: tuple[click.Command, ...] = (
+    setup_command,
+    doctor_command,
+    templates_command,
+    cost_command,
+    languages_command,
+    audit_command,
+    ui_command,
+    launcher_command,
+    preview_command,
     init_command,
     lint_command,
     validate_command,
