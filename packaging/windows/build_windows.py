@@ -1,4 +1,4 @@
-"""Build the Windows desktop application and the single-file setup wizard.
+﻿"""Build the Windows desktop application and the single-file setup wizard.
 
 Usage (from the repository root, on Windows)::
 

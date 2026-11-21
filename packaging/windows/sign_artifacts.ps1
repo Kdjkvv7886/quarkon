@@ -1,4 +1,4 @@
-# Sign Quarkon executables with an Authenticode certificate.
+﻿# Sign Quarkon executables with an Authenticode certificate.
 #
 # Everything is passed through environment variables so a password never appears
 # in a process command line (and therefore never in CI logs):
@@ -17,6 +17,15 @@
 # 3 signing produced a file without a usable signature.
 
 $ErrorActionPreference = "Stop"
+
+# GitHub Actions exports a PSModulePath aimed at PowerShell 7; Windows PowerShell
+# 5.1 then cannot autoload its own Microsoft.PowerShell.Security module. Re-add the
+# default module directory before using any cmdlet from it.
+$defaultModules = Join-Path $PSHOME "Modules"
+if ($env:PSModulePath -notlike "*$defaultModules*") {
+    $env:PSModulePath = $defaultModules + ";" + $env:PSModulePath
+}
+Import-Module Microsoft.PowerShell.Security -Force -ErrorAction Stop
 
 $files = @()
 if ($env:QUARKON_SIGN_FILES) {
