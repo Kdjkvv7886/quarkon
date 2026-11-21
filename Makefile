@@ -22,15 +22,15 @@ test:
 	$(PYTHON) -m pytest -q
 
 typecheck:
-	$(PYTHON) -m mypy quarkon
+	$(PYTHON) -m mypy quarkon quark
 
 # CI runs mypy on Linux; platform-specific branches (ctypes.windll, /proc) must
 # type-check there too, which a local Windows run cannot prove on its own.
 typecheck-linux:
-	$(PYTHON) -m mypy --platform linux quarkon
+	$(PYTHON) -m mypy --platform linux quarkon quark
 
 lint:
-	$(PYTHON) -m ruff check quarkon tests
+	$(PYTHON) -m ruff check quarkon quark tests
 
 check: typecheck lint test
 

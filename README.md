@@ -27,6 +27,39 @@ print(result.runtime_model)
 
 ---
 
+## Quark Engine v2.0 (serving layer)
+
+The `quark` package (independent version `2.0.0`) implements the serving models
+approved in the audit; every number is a fixed constant, not a tunable guess.
+
+| Module | ADR | Contract |
+|---|---|---|
+| `quark.performance.speculative` | ADR-006 | `S = 1/((1-alpha)+alpha/K)`, `K = 4`, `\|V\| = 152_064`, bypass at `B >= 16`, floor `alpha >= 0.70` |
+| `quark.security.memory` | ADR-007 | `mlock`, `madvise(MADV_DONTDUMP = 16)`, zeroisation, `> 1 TB/s` VRAM clear target |
+| `quark.security.guardrail` | ADR-007 | 128-bit canary, instruction-override scan, 15 ms budget |
+| `quark.serve.cache` | ADR-008 | 32 VRAM / 256 pinned RAM / NVMe, 18.5 MB adapters, 0.65 ms swap |
+| `quark.serve.lifecycle` | ADR-010 | `15 s + 90 s + 15 s <= 120 s` termination budget |
+
+```python
+from quark import (
+    AdapterHierarchyCache,
+    FastPromptGuardrail,
+    LinuxMemoryProtector,
+    SpeculativeGovernor,
+    leviathan_speedup,
+)
+
+governor = SpeculativeGovernor()
+assert governor.should_speculate(current_batch_size=8, draft_acceptance_rate=0.80)
+print(round(leviathan_speedup(0.85), 3))  # 2.759 for K = 4
+
+cache = AdapterHierarchyCache()
+cache.put("tenant-a")                     # -> CacheTier.VRAM
+guardrail = FastPromptGuardrail()
+prompt = guardrail.inject_canary("You are a careful assistant.")
+guardrail.verify_output("normal answer")   # raises on canary leakage
+```
+
 ## For non-technical users
 
 Install once (`install.ps1` on Windows, `install.sh` on Linux/macOS), then run

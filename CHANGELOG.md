@@ -4,6 +4,44 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-11-21
+
+Adds the **Quark Engine v2.0** serving layer as a second import package
+(`quark`, independent version `2.0.0`) implementing the audit-approved runtime
+models ADR-006 … ADR-010 with the exact audited constants.
+
+### Added
+
+- `quark/performance/speculative.py` — `SpeculativeGovernor`: Leviathan
+  `S = 1 / ((1 - alpha) + alpha / K)`, `K = 4`, `|V| = 152_064`, bypass at
+  `B >= 16`, acceptance floor `alpha >= 0.70`; decisions are explainable and
+  counters are exposed for metrics.
+- `quark/security/memory.py` — `LinuxMemoryProtector`: `mlock`,
+  `madvise(MADV_DONTDUMP = 16)`, `unlock`, `protect_tensor`, `secure_zero`
+  (torch tensor / bytearray / memoryview / ctypes buffer) and the
+  `VRAM_ZERO_MIN_BYTES_PER_SEC = 1e12` clear-rate threshold.
+- `quark/security/guardrail.py` — `FastPromptGuardrail`: 128-bit canary
+  (`secrets.token_hex(16)`), leakage detection, instruction-override scanning and
+  the hard 15 ms budget.
+- `quark/serve/cache.py` — `AdapterHierarchyCache`: 3-tier SLRU
+  (32 VRAM ≈ 592 MB, 256 pinned RAM ≈ 4.7 GB, NVMe cold), 18.5 MB adapters,
+  0.65 ms swap budget, per-tier hit/promotion/demotion counters.
+- `quark/serve/lifecycle.py` — ADR-010 validator for
+  `15 + 90 + 15 <= 120` seconds.
+- 55 tests pinning every constant and control loop.
+
+### Changed
+
+- The distribution ships two import packages: `quarkon` (distillation) and
+  `quark` (serving engine).
+- Ruff, mypy strict, Makefile and CI now cover both packages.
+
+### Verified
+
+- Full suite: 565 tests pass; `mypy --strict` clean on 58 modules for Windows and
+  `--platform linux`; `ruff` clean; `bandit -ll` clean; wheel 3.1.0 contains both
+  packages and `twine check` PASSED.
+
 ## [3.0.0] - 2026-11-21
 
 A corporate-experience release: a graphical wizard for non-technical users,

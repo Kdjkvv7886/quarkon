@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quarkon"
-version = "3.0.0"
+version = "3.1.0"
 description = "Production-grade pipeline for distilling reasoning models into compact, self-hosted edge models."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
@@ -61,7 +61,7 @@ Changelog = "https://github.com/Kdjkvv7886/quarkon/blob/main/CHANGELOG.md"
 quarkon = "quarkon.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["quarkon"]
+packages = ["quarkon", "quark"]
 
 [tool.hatch.build.targets.sdist]
 include = ["quarkon", "tests", "examples", "README.md", "LICENSE", "ARCHITECTURE.md"]
@@ -106,6 +106,9 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]
+# The engine layer pins audit constants; a literal in a docstring is
+# intentional and the tests assert the values anyway.
+"quark/*" = ["N818"]
 # The CLI group is defined before the commands are imported (the decorators need
 # it), which is a deliberate late import; __all__ is grouped by layer for readers.
 "quarkon/cli/main.py" = ["E402"]

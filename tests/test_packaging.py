@@ -38,7 +38,10 @@ class TestPackaging:
 
     def test_wheel_target_contains_the_package(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["quarkon"]
+        assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == [
+        "quarkon",
+        "quark",
+    ]
 
     def test_license_file_referenced(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
