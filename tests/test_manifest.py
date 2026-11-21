@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 from conftest import make_config_dict
 
-from opendistill.core.config import PipelineConfig
-from opendistill.core.exceptions import CheckpointError, ConfigError
-from opendistill.core.manifest import (
+from quarkon.core.config import PipelineConfig
+from quarkon.core.exceptions import CheckpointError, ConfigError
+from quarkon.core.manifest import (
     MANIFEST_SCHEMA_VERSION,
     ManifestStore,
     RunManifest,
@@ -22,7 +22,7 @@ from opendistill.core.manifest import (
     utc_now_iso,
     verify_artifact,
 )
-from opendistill.core.workspace import WorkspaceLayout
+from quarkon.core.workspace import WorkspaceLayout
 
 SHA_EMPTY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
@@ -63,7 +63,7 @@ class TestEnvironmentInfo:
         info = environment_info()
         assert info["python"]
         assert info["platform"]
-        assert "opendistill" in info["packages"]
+        assert "quarkon" in info["packages"]
         assert isinstance(info["packages"], dict)
 
     def test_never_raises(self) -> None:
@@ -255,7 +255,7 @@ class TestWorkspaceLayout:
         assert layout.manifest == tmp_path / "manifest.json"
         assert layout.adapter_dir == tmp_path / "adapter"
         assert layout.metrics_file == tmp_path / "metrics.json"
-        assert layout.log_file == tmp_path / "logs" / "opendistill.log"
+        assert layout.log_file == tmp_path / "logs" / "quarkon.log"
 
     def test_ensure_creates_root(self, tmp_path: Path) -> None:
         layout = WorkspaceLayout.for_root(tmp_path / "new")

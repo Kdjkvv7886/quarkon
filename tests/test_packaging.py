@@ -13,8 +13,8 @@ try:  # Python 3.11+
 except ModuleNotFoundError:  # Python 3.10
     import tomli as tomllib
 
-from opendistill.cli.main import main
-from opendistill.core.config import PipelineConfig, render_config_template
+from quarkon.cli.main import main
+from quarkon.core.config import PipelineConfig, render_config_template
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,7 +29,7 @@ class TestPackaging:
 
     def test_entry_point_matches_module(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        assert pyproject["project"]["scripts"]["opendistill"] == "opendistill.cli.main:main"
+        assert pyproject["project"]["scripts"]["quarkon"] == "quarkon.cli.main:main"
 
     def test_no_dead_optional_extras(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
@@ -38,7 +38,7 @@ class TestPackaging:
 
     def test_wheel_target_contains_the_package(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["opendistill"]
+        assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["quarkon"]
 
     def test_license_file_referenced(self) -> None:
         pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
@@ -101,7 +101,7 @@ class TestWorkspaceLayoutRules:
         assert not (tmp_path / "ro").exists(), "status must not create the workspace"
 
     def test_plan_never_exceeds_target(self) -> None:
-        from opendistill.synthesis.generator import SampleGenerator
+        from quarkon.synthesis.generator import SampleGenerator
 
         config = PipelineConfig.from_dict(
             {
@@ -135,7 +135,7 @@ class TestConfigExampleParity:
 
     def test_documented_flags_exist(self) -> None:
         """Every flag named in the README usage table must be accepted."""
-        from opendistill.cli.main import cli
+        from quarkon.cli.main import cli
 
         help_text = cli.get_help(__import__("click").Context(cli))
         for flag in (

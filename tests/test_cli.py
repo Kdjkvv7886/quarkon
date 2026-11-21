@@ -1,6 +1,6 @@
 """Tests for the CLI contract: exit codes, output formats, command behaviour.
 
-Every test drives :func:`opendistill.cli.main.main` in-process and captures the
+Every test drives :func:`quarkon.cli.main.main` in-process and captures the
 streams, so the assertions cover exactly what a CI pipeline observes: stdout
 content, stderr diagnostics and the numeric exit status.
 """
@@ -13,9 +13,9 @@ from typing import Any
 
 import pytest
 
-from opendistill import __version__
-from opendistill.cli.main import main
-from opendistill.core.config import render_config_template
+from quarkon import __version__
+from quarkon.cli.main import main
+from quarkon.core.config import render_config_template
 
 
 class Result:
@@ -53,7 +53,7 @@ class TestGlobalOptions:
     def test_help_exits_zero(self, capsys: Any) -> None:
         result = run_cli(["--help"], capsys)
         assert result.code == 0
-        assert "opendistill" in result.out.lower()
+        assert "quarkon" in result.out.lower()
         for command in ("init", "validate", "synthesize", "train", "export", "run", "status", "inspect"):
             assert command in result.out
 

@@ -7,33 +7,33 @@ executed on this machine; anything not verified says so explicitly.
 
 | Item | Value |
 |---|---|
-| Version | `1.1.1` (defined once in `opendistill/core/version.py`) |
-| Repository | <https://github.com/Kdjkvv7886/opendistill> (private) |
+| Version | `1.1.1` (defined once in `quarkon/core/version.py`) |
+| Repository | <https://github.com/Kdjkvv7886/quarkon> (private) |
 | Commits | `main` at `373dd3d` (initial release + security hardening) |
 | Tags | `v1.1.0`, `v1.1.1` |
-| CI | green: <https://github.com/Kdjkvv7886/opendistill/actions/runs/44907489626> |
-| Artefacts | `opendistill-1.1.1-py3-none-any.whl`, `opendistill-1.1.1.tar.gz` |
+| CI | green: <https://github.com/Kdjkvv7886/quarkon/actions/runs/44907489626> |
+| Artefacts | `quarkon-1.1.1-py3-none-any.whl`, `quarkon-1.1.1.tar.gz` |
 
 ## Verified locally
 
 | Gate | Command | Result |
 |---|---|---|
-| Lint | `ruff check opendistill tests` | clean (0 findings) |
-| Types (Windows) | `mypy opendistill` (strict) | 0 errors, 42 modules |
-| Types (Linux) | `mypy --platform linux opendistill` | 0 errors (CI equivalent) |
+| Lint | `ruff check quarkon tests` | clean (0 findings) |
+| Types (Windows) | `mypy quarkon` (strict) | 0 errors, 42 modules |
+| Types (Linux) | `mypy --platform linux quarkon` | 0 errors (CI equivalent) |
 | Tests 3.14 | `pytest tests` | **482 passed** (4 consecutive full runs) |
 | Tests 3.11 | `pytest tests` | 482 passed |
-| Static security | `bandit -r opendistill -ll` | 0 findings (all severities suppressed or absent) |
+| Static security | `bandit -r quarkon -ll` | 0 findings (all severities suppressed or absent) |
 | Dependency audit | `pip-audit` on declared runtime deps | no known vulnerabilities |
 | Build | `python -m build --wheel --sdist` | wheel + sdist built |
 | Metadata | `twine check dist/*` | PASSED (wheel + sdist) |
 | Wheel contents | zip listing | `privacy/`, `core/linter.py`, `synthesis/router.py`, `cli/commands/lint.py` present |
 | Sdist contents | tar listing | package, tests, examples, LICENSE, ARCHITECTURE, SECURITY |
-| Clean install | venv + `pip install <wheel>` | `opendistill --version` -> 1.1.1 |
-| Console script | `opendistill --help` | lists `lint`; `init`/`validate`/`lint` work |
+| Clean install | venv + `pip install <wheel>` | `quarkon --version` -> 1.1.1 |
+| Console script | `quarkon --help` | lists `lint`; `init`/`validate`/`lint` work |
 | Exit codes | manual | `0` success, `2` config/lint blocker, `1` runtime |
 | SDK surface | installed wheel | `CleanRoomSanitizer`, `CoTRouter`, `run_preflight_checks`, `ALL_LINEAR_MODULES` importable |
-| Pre-flight | `opendistill lint` | ~80-100 ms; correctly blocks this host (4 GB VRAM < 6 GB requirement) |
+| Pre-flight | `quarkon lint` | ~80-100 ms; correctly blocks this host (4 GB VRAM < 6 GB requirement) |
 | Privacy | end-to-end test | original PII absent from API payload and dataset; vault purged |
 | CI (remote) | GitHub Actions run 44907489626 | 4/4 jobs green (3.10, 3.11, 3.12, security) |
 
@@ -102,8 +102,8 @@ git push origin main v1.1.1     # CI matrix + security job
 
 ```bash
 export DEEPSEEK_API_KEY=...
-opendistill lint --require-gpu          # must pass
-opendistill --config examples/distill.yaml run
+quarkon lint --require-gpu          # must pass
+quarkon --config examples/distill.yaml run
 # verify:
 #   manifest.json                  -> dataset sha256, synthesis.cot_tier, synthesis.privacy.purged=true
 #   adapter/adapter_metadata.json  -> dataset_sha256, cot_tier, base_model, lora geometry

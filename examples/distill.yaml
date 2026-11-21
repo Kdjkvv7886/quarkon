@@ -1,9 +1,9 @@
-# OpenDistill example project
+# Quarkon example project
 #
 #   export DEEPSEEK_API_KEY=sk-...
-#   opendistill --config examples/distill.yaml validate
-#   opendistill --config examples/distill.yaml synthesize --dry-run
-#   opendistill --config examples/distill.yaml run
+#   quarkon --config examples/distill.yaml validate
+#   quarkon --config examples/distill.yaml synthesize --dry-run
+#   quarkon --config examples/distill.yaml run
 #
 # Relative paths resolve against this file's directory.
 version: 1

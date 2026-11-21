@@ -1,13 +1,13 @@
 # Architecture
 
-This document explains how OpenDistill is put together: module responsibilities,
+This document explains how Quarkon is put together: module responsibilities,
 the data flow between phases, the crash-safety design of the store, and the
 extension points for embedding it in a larger platform.
 
 ## Design principles
 
-1. **Library-first, CLI-thin.** All behaviour lives in the `opendistill` package.
-   `opendistill.cli` only parses arguments, renders output and maps exceptions to
+1. **Library-first, CLI-thin.** All behaviour lives in the `quarkon` package.
+   `quarkon.cli` only parses arguments, renders output and maps exceptions to
    exit codes. Nothing in `core/`, `synthesis/`, `validation/`, `training/` or
    `export/` imports from `cli/`.
 2. **Fail fast, fail specific.** Prerequisites (API key, CUDA, free VRAM, disk
@@ -29,7 +29,7 @@ extension points for embedding it in a larger platform.
 ## Module map
 
 ```
-opendistill/
+quarkon/
 ├── __init__.py          Public SDK surface (stable import path)
 ├── engine.py            DistillationEngine: phase orchestration + manifest updates
 ├── core/
@@ -93,7 +93,7 @@ phase implementation, records status/duration/error, and saves atomically. A
 failed phase leaves a valid manifest that describes exactly how far the run got.
 
 Logging has two sinks: the console (human ASCII or NDJSON) and an append-only
-file under `<workspace>/logs/opendistill.log`. The file sink is attached by the
+file under `<workspace>/logs/quarkon.log`. The file sink is attached by the
 phase commands and by the SDK engine before any work starts, so the `logs` entry
 in `manifest.json` always names a file that exists. Read-only commands
 (`status`, `inspect`) never attach it and never create the workspace.
@@ -134,7 +134,7 @@ Outcomes:
 
 `integrity_check()` cross-validates the ledger and the dataset (missing records,
 duplicate ids, unparseable lines) and is executed at the end of each synthesis
-run plus by `opendistill inspect`.
+run plus by `quarkon inspect`.
 
 A configuration change that affects generation (objective, seeds, teacher
 sampling, prompt style) changes the config *fingerprint*; the store detects the

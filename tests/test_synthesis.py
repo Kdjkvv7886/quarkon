@@ -19,23 +19,23 @@ import httpx
 import pytest
 from conftest import TeacherResponse, TeacherServer, make_config_dict, make_transport
 
-from opendistill.core.config import PipelineConfig
-from opendistill.core.exceptions import CheckpointError, ConfigError, SynthesisError
-from opendistill.synthesis.client import (
+from quarkon.core.config import PipelineConfig
+from quarkon.core.exceptions import CheckpointError, ConfigError, SynthesisError
+from quarkon.synthesis.client import (
     ChatCompletion,
     ChatMessage,
     DeepSeekClient,
     RetryPolicy,
     compute_backoff_delay,
 )
-from opendistill.synthesis.generator import (
+from quarkon.synthesis.generator import (
     SampleGenerator,
     build_chat_record,
     build_seed_prompts,
     load_seed_prompts,
     parse_assistant_content,
 )
-from opendistill.synthesis.storage import (
+from quarkon.synthesis.storage import (
     DATASET_FORMAT_VERSION,
     Sample,
     SampleStore,

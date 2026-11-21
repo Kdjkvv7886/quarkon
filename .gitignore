@@ -26,7 +26,7 @@ secrets.*
 .pypirc
 *.log
 
-# OpenDistill runtime artifacts (data is reproducible from distill.yaml + DEEPSEEK_API_KEY)
+# Quarkon runtime artifacts (data is reproducible from distill.yaml + DEEPSEEK_API_KEY)
 .workspace/
 *.manifest.json
 manifest.json

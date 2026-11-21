@@ -1,0 +1,10 @@
+"""``python -m quarkon`` entry point."""
+
+from __future__ import annotations
+
+import sys
+
+from quarkon.cli.main import main
+
+if __name__ == "__main__":
+    sys.exit(main())

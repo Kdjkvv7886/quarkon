@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from opendistill.core.exceptions import ConfigError
-from opendistill.validation.base import (
+from quarkon.core.exceptions import ConfigError
+from quarkon.validation.base import (
     Candidate,
     ValidationIssue,
     ValidationOutcome,
@@ -15,14 +15,14 @@ from opendistill.validation.base import (
     ValidatorChain,
     ValidatorContext,
 )
-from opendistill.validation.json_schema import (
+from quarkon.validation.json_schema import (
     JSONSchemaError,
     JSONSchemaValidator,
     compile_schema,
     extract_json_value,
     validate_json_schema_document,
 )
-from opendistill.validation.quality import (
+from quarkon.validation.quality import (
     DEFAULT_MIN_REASONING_CHARS,
     DuplicateFilter,
     QualityConfig,

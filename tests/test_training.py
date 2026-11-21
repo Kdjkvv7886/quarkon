@@ -14,10 +14,10 @@ from typing import Any
 import pytest
 from conftest import FakeTokenizer, FakeTrainerBackend, make_config_dict
 
-from opendistill.core.config import PipelineConfig
-from opendistill.core.exceptions import ConfigError, EnvironmentError_, TrainingError
-from opendistill.synthesis.generator import build_chat_record
-from opendistill.training.unsloth_engine import (
+from quarkon.core.config import PipelineConfig
+from quarkon.core.exceptions import ConfigError, EnvironmentError_, TrainingError
+from quarkon.synthesis.generator import build_chat_record
+from quarkon.training.unsloth_engine import (
     CHATML_TEMPLATE,
     LLAMA3_TEMPLATE,
     MetricRecorder,
@@ -251,7 +251,7 @@ class TestEnvironmentGate:
         assert "cuda_available" in env.to_dict()
 
     def test_unsloth_backend_requires_gpu(self) -> None:
-        from opendistill.training.unsloth_engine import UnslothBackend
+        from quarkon.training.unsloth_engine import UnslothBackend
 
         trainer = UnslothTrainer(make_config(), backend=UnslothBackend(make_config()))
         env = detect_gpu_env()
@@ -326,7 +326,7 @@ class TestUnslothTrainer:
         assert trainer.run(make_samples(2)).steps == 4
 
     def test_disk_capacity_gate_is_config_error(self, tmp_path: Path) -> None:
-        from opendistill.core.workspace import WorkspaceLayout
+        from quarkon.core.workspace import WorkspaceLayout
 
         with pytest.raises(ConfigError):
             WorkspaceLayout.for_root(tmp_path).require_training_capacity(10**18)

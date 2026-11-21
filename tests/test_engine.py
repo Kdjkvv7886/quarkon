@@ -23,12 +23,12 @@ from conftest import (
     make_transport,
 )
 
-from opendistill import RuntimeOptions
-from opendistill.core.config import PipelineConfig
-from opendistill.core.exceptions import ConfigError, ExportError, TrainingError
-from opendistill.core.manifest import ManifestStore, hash_file
-from opendistill.engine import DistillationEngine, PipelineResult
-from opendistill.synthesis.client import DeepSeekClient, RetryPolicy
+from quarkon import RuntimeOptions
+from quarkon.core.config import PipelineConfig
+from quarkon.core.exceptions import ConfigError, ExportError, TrainingError
+from quarkon.core.manifest import ManifestStore, hash_file
+from quarkon.engine import DistillationEngine, PipelineResult
+from quarkon.synthesis.client import DeepSeekClient, RetryPolicy
 
 
 def make_config(**overrides: Any) -> PipelineConfig:
@@ -136,7 +136,7 @@ class TestFullPipeline:
             assert phase["duration_s"] >= 0
         # environment
         assert manifest["environment"]["python"]
-        assert "opendistill" in manifest["environment"]["packages"]
+        assert "quarkon" in manifest["environment"]["packages"]
 
     def test_metrics_file_contains_loss_history(self, tmp_path: Path) -> None:
         engine, _server, _trainer = make_engine(tmp_path)

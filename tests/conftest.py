@@ -27,10 +27,10 @@ from typing import Any, ClassVar
 
 import httpx
 
-from opendistill.core.config import PipelineConfig
-from opendistill.core.manifest import utc_now_iso
-from opendistill.export.gguf import GGUFBackend
-from opendistill.training.unsloth_engine import (
+from quarkon.core.config import PipelineConfig
+from quarkon.core.manifest import utc_now_iso
+from quarkon.export.gguf import GGUFBackend
+from quarkon.training.unsloth_engine import (
     MetricRecorder,
     RenderedDataset,
     TrainerBackend,
@@ -264,7 +264,7 @@ class FakeTrainerBackend(TrainerBackend):
             encoding="utf-8",
         )
         weights = adapter_dir / "adapter_model.safetensors"
-        weights.write_bytes(b"opendistill-test-adapter" * 64)
+        weights.write_bytes(b"quarkon-test-adapter" * 64)
         for step, loss in enumerate(self.loss_curve, start=1):
             recorder.log({"step": step, "loss": loss, "learning_rate": 2e-4, "epoch": step / 10})
         return {

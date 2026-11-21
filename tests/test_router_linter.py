@@ -11,8 +11,8 @@ from typing import Any
 import pytest
 from conftest import TeacherServer, make_config_dict, make_transport
 
-from opendistill.core.config import PipelineConfig, render_config_template
-from opendistill.core.linter import (
+from quarkon.core.config import PipelineConfig, render_config_template
+from quarkon.core.linter import (
     MIN_SAMPLE_BUDGET,
     HardwareProfile,
     LinterResult,
@@ -20,7 +20,7 @@ from opendistill.core.linter import (
     format_findings,
     run_preflight_checks,
 )
-from opendistill.synthesis.router import (
+from quarkon.synthesis.router import (
     TIER_SPECS,
     CoTRouter,
     CoTTier,
@@ -166,7 +166,7 @@ class TestRouting:
 
 class TestRouterGeneratorIntegration:
     def test_system_prompt_carries_the_policy(self) -> None:
-        from opendistill.synthesis.generator import SampleGenerator
+        from quarkon.synthesis.generator import SampleGenerator
 
         config_ = config(synthesis={"cot_tier": "tier_1_micro"})
         generator = SampleGenerator(config_, seeds=["seed one"])
@@ -177,8 +177,8 @@ class TestRouterGeneratorIntegration:
     def test_sample_metadata_records_the_tier(self, tmp_path: Path) -> None:
         import asyncio
 
-        from opendistill.synthesis.client import DeepSeekClient, RetryPolicy
-        from opendistill.synthesis.generator import SampleGenerator
+        from quarkon.synthesis.client import DeepSeekClient, RetryPolicy
+        from quarkon.synthesis.generator import SampleGenerator
 
         server = TeacherServer()
         client = DeepSeekClient(
@@ -405,7 +405,7 @@ class TestHardwareDetection:
     def test_linter_result_properties(self) -> None:
         result = LinterResult()
         result.findings.append(
-            __import__("opendistill.core.linter", fromlist=["LintFinding"]).LintFinding(
+            __import__("quarkon.core.linter", fromlist=["LintFinding"]).LintFinding(
                 code="x", severity="blocker", message="broken"
             )
         )

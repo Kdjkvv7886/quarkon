@@ -1,4 +1,4 @@
-# OpenDistill development tasks.
+# Quarkon development tasks.
 #
 #   make install     install the package in editable mode with dev extras
 #   make test        run the test suite (no GPU or network required)
@@ -22,23 +22,23 @@ test:
 	$(PYTHON) -m pytest -q
 
 typecheck:
-	$(PYTHON) -m mypy opendistill
+	$(PYTHON) -m mypy quarkon
 
 # CI runs mypy on Linux; platform-specific branches (ctypes.windll, /proc) must
 # type-check there too, which a local Windows run cannot prove on its own.
 typecheck-linux:
-	$(PYTHON) -m mypy --platform linux opendistill
+	$(PYTHON) -m mypy --platform linux quarkon
 
 lint:
-	$(PYTHON) -m ruff check opendistill tests
+	$(PYTHON) -m ruff check quarkon tests
 
 check: typecheck lint test
 
 validate:
-	$(PYTHON) -m opendistill --config $(CONFIG) validate
+	$(PYTHON) -m quarkon --config $(CONFIG) validate
 
 dry-run:
-	$(PYTHON) -m opendistill --config $(CONFIG) synthesize --dry-run
+	$(PYTHON) -m quarkon --config $(CONFIG) synthesize --dry-run
 
 dist:
 	$(PYTHON) -m build --wheel --sdist --outdir dist

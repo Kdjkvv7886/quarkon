@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from opendistill.core.config import (
+from quarkon.core.config import (
     CONFIG_VERSION,
     DEFAULT_BASE_MODEL,
     SUPPORTED_BASE_MODELS,
@@ -21,7 +21,7 @@ from opendistill.core.config import (
     TrainConfig,
     render_config_template,
 )
-from opendistill.core.exceptions import ConfigError
+from quarkon.core.exceptions import ConfigError
 
 MINIMAL: dict[str, Any] = {
     "version": 1,

@@ -22,20 +22,20 @@ from conftest import (
 )
 from pydantic import ValidationError
 
-from opendistill import RuntimeOptions
-from opendistill.core.config import PipelineConfig, TaskConfig
-from opendistill.core.exceptions import ConfigError, SynthesisError, TrainingError
-from opendistill.core.manifest import ManifestStore, error_record
-from opendistill.core.redaction import REDACTED, redact_mapping, redact_secrets
-from opendistill.core.version import __version__
-from opendistill.engine import DistillationEngine
-from opendistill.synthesis.client import (
+from quarkon import RuntimeOptions
+from quarkon.core.config import PipelineConfig, TaskConfig
+from quarkon.core.exceptions import ConfigError, SynthesisError, TrainingError
+from quarkon.core.manifest import ManifestStore, error_record
+from quarkon.core.redaction import REDACTED, redact_mapping, redact_secrets
+from quarkon.core.version import __version__
+from quarkon.engine import DistillationEngine
+from quarkon.synthesis.client import (
     MAX_RESPONSE_BYTES,
     ChatMessage,
     DeepSeekClient,
     RetryPolicy,
 )
-from opendistill.training.unsloth_engine import (
+from quarkon.training.unsloth_engine import (
     UnslothTrainer,
     enforce_safetensors_only,
 )
@@ -175,7 +175,7 @@ class TestTransportPolicy:
     def test_oversized_response_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import httpx
 
-        monkeypatch.setattr("opendistill.synthesis.client.MAX_RESPONSE_BYTES", 64)
+        monkeypatch.setattr("quarkon.synthesis.client.MAX_RESPONSE_BYTES", 64)
 
         def handler(request: Any) -> Any:
             return httpx.Response(200, content=b"x" * 4096, request=request)
@@ -210,7 +210,7 @@ class TestModelIntegrity:
     def test_tokenizer_is_pinned_to_the_resolved_revision(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from opendistill.training import unsloth_engine
+        from quarkon.training import unsloth_engine
 
         monkeypatch.setattr(
             unsloth_engine, "_resolve_revision", lambda model_id: "deadbeefcafe"
@@ -270,7 +270,7 @@ class TestInputHandling:
         config = make_config(
             synthesis={"target_samples": 1, "concurrency": 1}, privacy={"enabled": False}
         )
-        from opendistill.synthesis.generator import SampleGenerator
+        from quarkon.synthesis.generator import SampleGenerator
 
         generator = SampleGenerator(config, client=client)
 
@@ -283,7 +283,7 @@ class TestInputHandling:
         result = asyncio.run(run())
         assert result.accepted == 1
         # Ledger is intact and still queryable.
-        from opendistill.synthesis.storage import SampleStore
+        from quarkon.synthesis.storage import SampleStore
 
         with SampleStore(tmp_path, fingerprint=config.fingerprint()) as store:
             assert len(store.load_accepted()) == 1
@@ -331,7 +331,7 @@ class TestNoSecretPersistence:
 
 
 def _samples(count: int) -> list[Any]:
-    from opendistill.synthesis.generator import build_chat_record
+    from quarkon.synthesis.generator import build_chat_record
 
     reasoning = (
         "Step 1: read the constraints. Step 2: derive the value. "

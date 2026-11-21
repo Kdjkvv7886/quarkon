@@ -23,11 +23,11 @@ from conftest import (
 )
 from pydantic import ValidationError
 
-from opendistill import RuntimeOptions
-from opendistill.cli.main import main
-from opendistill.core.config import PipelineConfig, render_config_template
-from opendistill.core.exceptions import ConfigError
-from opendistill.core.logging import (
+from quarkon import RuntimeOptions
+from quarkon.cli.main import main
+from quarkon.core.config import PipelineConfig, render_config_template
+from quarkon.core.exceptions import ConfigError
+from quarkon.core.logging import (
     attach_log_file,
     close_log_files,
     configure_logging,
@@ -35,9 +35,9 @@ from opendistill.core.logging import (
     get_logger,
     reset_logging,
 )
-from opendistill.engine import DistillationEngine
-from opendistill.synthesis.client import DeepSeekClient, RetryPolicy
-from opendistill.synthesis.generator import SampleGenerator
+from quarkon.engine import DistillationEngine
+from quarkon.synthesis.client import DeepSeekClient, RetryPolicy
+from quarkon.synthesis.generator import SampleGenerator
 
 GOOD_REASONING = (
     "Step 1: read the constraints. Step 2: derive the value. "
@@ -65,7 +65,7 @@ def _isolate_logging() -> Any:
 class TestLogFile:
     def test_configure_writes_file_and_console(self, tmp_path: Path) -> None:
         console = _Capture()
-        log_path = tmp_path / "logs" / "opendistill.log"
+        log_path = tmp_path / "logs" / "quarkon.log"
         configure_logging(level="INFO", stream=console, log_file=log_path)
         get_logger("t").info("hello", samples=3)
         assert "hello" in console.getvalue()
@@ -218,8 +218,8 @@ class TestFewShot:
 
     def test_resume_rehydrates_anchors(self, tmp_path: Path) -> None:
         """A second run over an existing dataset must pick up its samples."""
-        from opendistill.synthesis.generator import build_chat_record
-        from opendistill.synthesis.storage import SampleStore
+        from quarkon.synthesis.generator import build_chat_record
+        from quarkon.synthesis.storage import SampleStore
 
         config = _config(
             synthesis={

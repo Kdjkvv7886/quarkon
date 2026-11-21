@@ -3,13 +3,13 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opendistill"
-version = "1.1.1"
+name = "quarkon"
+version = "2.0.0"
 description = "Production-grade pipeline for distilling reasoning models into compact, self-hosted edge models."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-authors = [{ name = "OpenDistill Maintainers" }]
+authors = [{ name = "Quarkon Maintainers" }]
 keywords = ["distillation", "reasoning", "lora", "qlora", "deepseek", "gguf", "ollama", "edge-ai"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Fine-tuning stack. Heavy (CUDA); install explicitly with `pip install 'opendistill[train]'`.
+# Fine-tuning stack. Heavy (CUDA); install explicitly with `pip install 'quarkon[train]'`.
 train = [
     "unsloth>=2024.10",
     "trl>=0.9",
@@ -52,19 +52,19 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Kdjkvv7886/opendistill"
-Repository = "https://github.com/Kdjkvv7886/opendistill"
-Issues = "https://github.com/Kdjkvv7886/opendistill/issues"
-Changelog = "https://github.com/Kdjkvv7886/opendistill/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Kdjkvv7886/quarkon"
+Repository = "https://github.com/Kdjkvv7886/quarkon"
+Issues = "https://github.com/Kdjkvv7886/quarkon/issues"
+Changelog = "https://github.com/Kdjkvv7886/quarkon/blob/main/CHANGELOG.md"
 
 [project.scripts]
-opendistill = "opendistill.cli.main:main"
+quarkon = "quarkon.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["opendistill"]
+packages = ["quarkon"]
 
 [tool.hatch.build.targets.sdist]
-include = ["opendistill", "tests", "examples", "README.md", "LICENSE", "ARCHITECTURE.md"]
+include = ["quarkon", "tests", "examples", "README.md", "LICENSE", "ARCHITECTURE.md"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -72,7 +72,7 @@ addopts = "-q"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-filterwarnings = ["error::DeprecationWarning:opendistill.*"]
+filterwarnings = ["error::DeprecationWarning:quarkon.*"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -108,8 +108,8 @@ ignore = ["E501"]
 "tests/*" = ["B011"]
 # The CLI group is defined before the commands are imported (the decorators need
 # it), which is a deliberate late import; __all__ is grouped by layer for readers.
-"opendistill/cli/main.py" = ["E402"]
-"opendistill/__init__.py" = ["RUF022"]
+"quarkon/cli/main.py" = ["E402"]
+"quarkon/__init__.py" = ["RUF022"]
 # Exception aliases deliberately avoid shadowing builtins (EnvironmentError,
 # pydantic's ValidationError); the trailing underscore is the project convention.
-"opendistill/core/exceptions.py" = ["N801", "N818"]
+"quarkon/core/exceptions.py" = ["N801", "N818"]

@@ -22,14 +22,14 @@ from conftest import (
     make_transport,
 )
 
-from opendistill import RuntimeOptions
-from opendistill.cli.main import main
-from opendistill.core.config import PipelineConfig, render_config_template
-from opendistill.core.exceptions import ConfigError, TrainingError
-from opendistill.engine import DistillationEngine
-from opendistill.synthesis.client import DeepSeekClient, RetryPolicy
-from opendistill.synthesis.generator import SampleGenerator
-from opendistill.training.unsloth_engine import (
+from quarkon import RuntimeOptions
+from quarkon.cli.main import main
+from quarkon.core.config import PipelineConfig, render_config_template
+from quarkon.core.exceptions import ConfigError, TrainingError
+from quarkon.engine import DistillationEngine
+from quarkon.synthesis.client import DeepSeekClient, RetryPolicy
+from quarkon.synthesis.generator import SampleGenerator
+from quarkon.training.unsloth_engine import (
     ADAPTER_METADATA_FILENAME,
     ALL_LINEAR_MODULES,
     UnslothTrainer,
@@ -48,7 +48,7 @@ def make_config(**overrides: Any) -> PipelineConfig:
 
 
 def make_samples(count: int = 2) -> list[Any]:
-    from opendistill.synthesis.generator import build_chat_record
+    from quarkon.synthesis.generator import build_chat_record
 
     return [
         build_chat_record(
@@ -397,8 +397,8 @@ class TestRunFlagWiring:
         self, capsys: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """`run --skip-sanitizer` must reach the synthesis implementation."""
-        from opendistill.cli.commands import run as run_command_module
-        from opendistill.synthesis.generator import SynthesisResult, SynthesisStats
+        from quarkon.cli.commands import run as run_command_module
+        from quarkon.synthesis.generator import SynthesisResult, SynthesisStats
 
         config_path = write_project(tmp_path)
         captured: dict[str, Any] = {}
@@ -441,8 +441,8 @@ class TestRunFlagWiring:
     def test_run_forwards_sanitizer_by_default(
         self, capsys: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from opendistill.cli.commands import run as run_command_module
-        from opendistill.synthesis.generator import SynthesisResult, SynthesisStats
+        from quarkon.cli.commands import run as run_command_module
+        from quarkon.synthesis.generator import SynthesisResult, SynthesisStats
 
         config_path = write_project(tmp_path)
         captured: dict[str, Any] = {}

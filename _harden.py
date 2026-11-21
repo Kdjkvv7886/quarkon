@@ -20,11 +20,11 @@ def patch(path: str, pairs: list[tuple[str, str]]) -> None:
 # 1) Version: one module, imported by the package and the HTTP client.
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/__init__.py",
+    "quarkon/__init__.py",
     [
         (
             '__version__ = "1.1.0"',
-            "from opendistill.core.version import __version__",
+            "from quarkon.core.version import __version__",
         )
     ],
 )
@@ -33,13 +33,13 @@ patch(
 # 2) Client: TLS policy, response-size cap, secret redaction in errors.
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/synthesis/client.py",
+    "quarkon/synthesis/client.py",
     [
         (
-            "from opendistill.core.exceptions import (\n",
-            "from opendistill.core.redaction import redact_secrets\n"
-            "from opendistill.core.version import __version__\n"
-            "from opendistill.core.exceptions import (\n",
+            "from quarkon.core.exceptions import (\n",
+            "from quarkon.core.redaction import redact_secrets\n"
+            "from quarkon.core.version import __version__\n"
+            "from quarkon.core.exceptions import (\n",
         ),
         (
             "#: Status codes worth retrying.\n",
@@ -69,8 +69,8 @@ patch(
             "        _require_tls(base_url)",
         ),
         (
-            '        user_agent: str = "opendistill/1.0",',
-            '        user_agent: str = f"opendistill/{__version__}",',
+            '        user_agent: str = "quarkon/1.0",',
+            '        user_agent: str = f"quarkon/{__version__}",',
         ),
         (
             "                if status in NON_RETRYABLE_STATUS_CODES or status >= 400:\n"
@@ -121,7 +121,7 @@ patch(
 )
 
 # Add the TLS guard helper next to the existing helpers.
-client = Path("opendistill/synthesis/client.py")
+client = Path("quarkon/synthesis/client.py")
 src = client.read_text(encoding="utf-8")
 anchor = "def _parse_retry_after(value: str | None) -> float | None:"
 helper = '''def _require_tls(base_url: str) -> None:
@@ -151,13 +151,13 @@ if helper not in src:
         raise SystemExit("client helper anchor not found")
     src = src.replace(anchor, helper + anchor, 1)
     client.write_text(src, encoding="utf-8", newline="\n")
-    print("patched opendistill/synthesis/client.py (TLS helper)")
+    print("patched quarkon/synthesis/client.py (TLS helper)")
 
 # ---------------------------------------------------------------------------
 # 3) Config: mirror the TLS policy at parse time, so bad config fails fast.
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/core/config.py",
+    "quarkon/core/config.py",
     [
         (
             "    cot_tier: Literal[\"auto\", \"tier_0_direct\", \"tier_1_micro\", \"tier_2_deep\"] = Field(",
@@ -191,7 +191,7 @@ patch(
 # 4) Manifest: redact every recorded error string.
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/core/manifest.py",
+    "quarkon/core/manifest.py",
     [
         (
             "    def end_phase(\n"
@@ -232,21 +232,21 @@ patch(
             "        )",
         ),
         (
-            "    if isinstance(exc, OpenDistillError):\n"
+            "    if isinstance(exc, QuarkonError):\n"
             "        payload = exc.to_dict()\n"
             "    else:\n"
             "        payload = {\"error\": type(exc).__name__, \"message\": str(exc)}\n"
             "    return payload",
-            "    if isinstance(exc, OpenDistillError):\n"
+            "    if isinstance(exc, QuarkonError):\n"
             "        payload = exc.to_dict()\n"
             "    else:\n"
             "        payload = {\"error\": type(exc).__name__, \"message\": str(exc)}\n"
             "    return redact_mapping(payload)",
         ),
         (
-            "from opendistill.core.logging import get_logger",
-            "from opendistill.core.logging import get_logger\n"
-            "from opendistill.core.redaction import redact_mapping, redact_secrets",
+            "from quarkon.core.logging import get_logger",
+            "from quarkon.core.logging import get_logger\n"
+            "from quarkon.core.redaction import redact_mapping, redact_secrets",
         ),
     ],
 )
@@ -255,7 +255,7 @@ patch(
 # 5) Trainer: pin the tokenizer to the resolved revision; broaden the pickle ban.
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/training/unsloth_engine.py",
+    "quarkon/training/unsloth_engine.py",
     [
         (
             "    @abc.abstractmethod\n"
@@ -316,7 +316,7 @@ patch(
 )
 
 # Broadened artefact guard: any pickled payload, not just four known names.
-engine = Path("opendistill/training/unsloth_engine.py")
+engine = Path("quarkon/training/unsloth_engine.py")
 src = engine.read_text(encoding="utf-8")
 old_guard = '''    directory = Path(adapter_dir)
     forbidden = [name for name in _FORBIDDEN_ADAPTER_FILES if (directory / name).is_file()]
@@ -373,7 +373,7 @@ if old_const not in src:
     raise SystemExit("forbidden constants not found")
 src = src.replace(old_const, new_const, 1)
 engine.write_text(src, encoding="utf-8", newline="\n")
-print("patched opendistill/training/unsloth_engine.py (guard)")
+print("patched quarkon/training/unsloth_engine.py (guard)")
 
 # ---------------------------------------------------------------------------
 # 6) Test doubles follow the new tokenizer signature.
@@ -394,7 +394,7 @@ patch(
 # 7) Bandit suppressions for accepted low-severity findings (with rationale).
 # ---------------------------------------------------------------------------
 patch(
-    "opendistill/core/linter.py",
+    "quarkon/core/linter.py",
     [
         ("import subprocess", "import subprocess  # nosec B404 - fixed probe, no shell"),
         (
@@ -404,7 +404,7 @@ patch(
     ],
 )
 patch(
-    "opendistill/privacy/sanitizer.py",
+    "quarkon/privacy/sanitizer.py",
     [
         (
             '    re.compile(r"(?i)((?:password|passwd|pwd)\\s*[\"\\\']?\\s*[:=]\\s*[\\"\\\']?)(\\S{6,})")',

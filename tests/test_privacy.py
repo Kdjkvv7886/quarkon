@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from opendistill.privacy import (
+from quarkon.privacy import (
     DEFAULT_ENTITIES,
     CleanRoomSanitizer,
     EntityKind,

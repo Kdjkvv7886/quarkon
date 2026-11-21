@@ -4,6 +4,42 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-11-21
+
+The project is renamed **Quarkon**. The pipeline, configuration schema, artefacts
+and security controls are unchanged; what changes is the name everything is
+addressed by.
+
+### Changed (breaking)
+
+- Distribution and import path: `opendistill` -> **`quarkon`**
+  (`from quarkon import DistillationEngine, PipelineConfig`).
+- Console script: `opendistill ...` -> **`quarkon ...`**; `python -m quarkon`.
+- Exception base class: `OpenDistillError` -> `QuarkonError` (and the interrupt
+  alias `QuarkonInterrupted`).
+- Debug environment flag: `OPENDISTILL_DEBUG` -> `QUARKON_DEBUG`.
+- Workspace log file: `logs/opendistill.log` -> `logs/quarkon.log`.
+- HTTP `User-Agent`: `quarkon/<version>`.
+- Repository: <https://github.com/Kdjkvv7886/quarkon>.
+
+### Migration
+
+```bash
+pip uninstall opendistill
+pip install quarkon            # or: pip install -e ".[dev]"
+# command, imports and config stay the same otherwise:
+quarkon --config distill.yaml lint
+```
+
+The `DEEPSEEK_API_KEY` variable, the YAML schema, the workspace layout and the
+manifest format are unchanged.
+
+### Verified
+
+- `ruff` clean, `mypy --strict` clean (Windows and `--platform linux`),
+  `pytest` 482 passed, `bandit -ll` 0 findings, `twine check` PASSED.
+- CI matrix 3.10/3.11/3.12 plus the security job green after the rename.
+
 ## [1.1.1] - 2026-11-21
 
 Security hardening from the pre-release audit. No public API break.

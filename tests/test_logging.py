@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from opendistill.core.logging import (
+from quarkon.core.logging import (
     LOG_FORMAT_ENV,
     LOG_LEVELS,
     configure_logging,
