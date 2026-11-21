@@ -1,4 +1,4 @@
-﻿# Sign Quarkon executables with an Authenticode certificate.
+# Sign Quarkon executables with an Authenticode certificate.
 #
 # Everything is passed through environment variables so a password never appears
 # in a process command line (and therefore never in CI logs):
@@ -18,14 +18,12 @@
 
 $ErrorActionPreference = "Stop"
 
-# GitHub Actions exports a PSModulePath aimed at PowerShell 7; Windows PowerShell
-# 5.1 then cannot autoload its own Microsoft.PowerShell.Security module. Re-add the
-# default module directory before using any cmdlet from it.
-$defaultModules = Join-Path $PSHOME "Modules"
-if ($env:PSModulePath -notlike "*$defaultModules*") {
-    $env:PSModulePath = $defaultModules + ";" + $env:PSModulePath
-}
-Import-Module Microsoft.PowerShell.Security -Force -ErrorAction Stop
+# Note: the caller (build_windows.py) drops the inherited PSModulePath before
+# starting this script. GitHub Actions exports a PowerShell 7 module path, and
+# Windows PowerShell 5.1 then cannot autoload Microsoft.PowerShell.Security; with
+# the variable removed, PowerShell computes its own default path and the signing
+# cmdlets load normally. Do not import the module manually - "Import-Module -Force"
+# trips a type-data conflict on the runner.
 
 $files = @()
 if ($env:QUARKON_SIGN_FILES) {
