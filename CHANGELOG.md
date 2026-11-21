@@ -1,8 +1,55 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.2.0] - 2026-11-21
+
+Adds the **Windows installer and desktop launcher**: one downloadable
+`QuarkonSetup-3.2.0-win64.exe` that installs per user, creates shortcuts, registers
+a real uninstaller and opens the interface — no Python installation and no
+administrator rights on the target machine.
+
+### Added
+
+- `packaging/windows/` — build system for the Windows artefacts:
+  `build_windows.py` (two PyInstaller stages, hashes, portable zip),
+  `installer_entry.py` (five-page graphical wizard + silent mode),
+  `install_core.py` (installation engine: pre-flight, payload extraction,
+  `install.json`, shortcuts, `HKCU` uninstall entry, PowerShell uninstaller),
+  `app_entry.py` (`Quarkon.exe` desktop shell with a `--check` self-test) and
+  `make_icon.py` (icon generated from code, no binary-only assets).
+- `ui_kit.py` — shared Tk design system: dark palette, gradient hero, rounded
+  buttons with hover/focus states, progress strip, log view, brand mark. The
+  installer and the app window look like one product.
+- Brand artwork `packaging/windows/assets/quarkon.ico` (7 sizes, 16–256 px) and
+  `quarkon-256.png`, both reproducible with `make_icon.py`.
+- Silent / unattended switches for IT deployment:
+  `QuarkonSetup-<version>.exe --silent --dir D:\Apps\Quarkon --no-launch`,
+  `--uninstall --silent`.
+- `.github/workflows/release-windows.yml` — builds the installer on
+  `windows-latest`, publishes it and the portable zip to the GitHub Release on a
+  `v*` tag, and keeps the artefacts as a workflow artifact on every manual run.
+- `tests/test_windows_installer.py` — pure-logic coverage for the installation
+  engine (version stamping, option parsing, registry values, uninstaller script,
+  payload safety) that runs on every platform.
+
+### Changed
+
+- `Quarkon.exe` opens the interface in the browser, keeps a small control window
+  (address, copy, projects folder, stop) and writes `app.log` under
+  `%LOCALAPPDATA%\Quarkon\logs` because a windowed build has no console.
+
+### Verified
+
+- `packaging/windows/smoke_test.ps1` on this machine: silent install into a
+  scratch profile, `install.json` reports 3.2.0 and 993 files, both wizard modes
+  render (`--ui-test`, `--ui-test --uninstall`), `Quarkon.exe --check` reports
+  `CHECK OK` with a live loopback URL, silent uninstall removes the folder.
+- Full suite: 583 tests pass; `mypy --strict` clean on 64 modules for Windows and
+  `--platform linux`; `ruff` clean on `quarkon`, `quark`, `tests` and
+  `packaging`; `bandit -ll` clean; wheel + sdist 3.2.0 `twine check` PASSED.
 
 ## [3.1.0] - 2026-11-21
 

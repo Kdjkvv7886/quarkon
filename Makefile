@@ -1,4 +1,4 @@
-# Quarkon development tasks.
+﻿# Quarkon development tasks.
 #
 #   make install     install the package in editable mode with dev extras
 #   make test        run the test suite (no GPU or network required)
@@ -10,7 +10,7 @@
 PYTHON ?= python
 CONFIG ?= examples/distill.yaml
 
-.PHONY: install test typecheck typecheck-linux lint check clean validate dry-run ui doctor dist release-check help
+.PHONY: install test typecheck typecheck-linux lint check clean validate dry-run ui doctor dist release-check installer installer-smoke help
 
 help:
 	@echo "targets: install test typecheck typecheck-linux lint check clean validate dry-run dist release-check"
@@ -22,15 +22,15 @@ test:
 	$(PYTHON) -m pytest -q
 
 typecheck:
-	$(PYTHON) -m mypy quarkon quark
+	$(PYTHON) -m mypy quarkon quark packaging/windows
 
 # CI runs mypy on Linux; platform-specific branches (ctypes.windll, /proc) must
 # type-check there too, which a local Windows run cannot prove on its own.
 typecheck-linux:
-	$(PYTHON) -m mypy --platform linux quarkon quark
+	$(PYTHON) -m mypy --platform linux quarkon quark packaging/windows
 
 lint:
-	$(PYTHON) -m ruff check quarkon quark tests
+	$(PYTHON) -m ruff check quarkon quark tests packaging
 
 check: typecheck lint test
 
@@ -48,6 +48,13 @@ dry-run:
 
 dist:
 	$(PYTHON) -m build --wheel --sdist --outdir dist
+
+# Windows installer (must run on Windows; see packaging/windows/README.md).
+installer:
+	$(PYTHON) packaging/windows/build_windows.py
+
+installer-smoke:
+	pwsh -File packaging/windows/smoke_test.ps1 -SetupPath dist/windows/QuarkonSetup-$(VERSION)-win64.exe
 
 # Everything a tag must pass: lint, types, tests, then a clean artefact build.
 release-check: check dist

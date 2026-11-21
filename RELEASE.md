@@ -1,4 +1,48 @@
-# Release checklist
+﻿# Release checklist
+
+## v3.2.0 — Windows installer and desktop launcher
+
+Status: **verified on this machine** (Windows 11, Python 3.11 for the frozen
+build, Python 3.14 for the test suite). Every line below was executed; what could
+not be verified says so.
+
+| Item | Value |
+|---|---|
+| Version | `3.2.0` |
+| Packages | `quarkon` 3.2.0 (pipeline/CLI/UI) + `quark` 2.0.0 (serving engine, unchanged) |
+| Artefacts | `QuarkonSetup-3.2.0-win64.exe` (29.4 MB), `Quarkon-3.2.0-win64-portable.zip` (19.2 MB), `SHA256SUMS.txt` |
+| Installer engine | per-user, no admin: `%LOCALAPPDATA%\Programs\Quarkon`, shortcuts, `HKCU` uninstall entry, PowerShell uninstaller |
+| Build | `python packaging/windows/build_windows.py` (PyInstaller 6.22, Python 3.11) |
+
+| Gate | Command | Result |
+|---|---|---|
+| Lint | `ruff check quarkon quark tests packaging` | clean |
+| Types (Windows) | `mypy quarkon quark packaging/windows` | 0 errors |
+| Tests | `pytest tests` | **583 passed** (18 new installer tests) |
+| Install smoke | `powershell -File packaging/windows/smoke_test.ps1 -SetupPath dist/windows/QuarkonSetup-3.2.0-win64.exe` | PASS: silent install, `Quarkon.exe --check` served the UI (`page_ok: true`), silent uninstall removed the folder |
+| Installer UI | manual + window capture | five-page wizard renders; Welcome, Folder, Options, Progress, Finish |
+| Shortcuts / registry | silent install without `--no-shortcuts` | Desktop + Start-menu `.lnk`, `HKCU\...\Uninstall\Quarkon` with version, icon, uninstall strings |
+| Uninstaller | `uninstall.ps1` (Apps & features) | removes shortcuts, registry key, program folder; keeps `%USERPROFILE%\Quarkon` projects by default |
+| Frozen app | `Quarkon.exe --check` | exit 0; log line `{"check": "ui", "ok": true, ...}` with token URL |
+| Wheel | `python -m build` + `twine check` | PASSED |
+
+### Not verified here
+
+1. **Clean-machine install.** The smoke test ran on a machine that already had
+   Python and the build toolchain. The frozen bundle carries its own runtime and
+   does not read the host Python, but a pristine VM/Intune deployment has not been
+   exercised.
+2. **Code signing.** The executables are unsigned; SmartScreen shows the
+   "unknown publisher" prompt until a certificate is attached.
+3. **Long-path / redirected-profile edge cases.** `%LOCALAPPDATA%` on a OneDrive
+   or network-redirected profile works only if the folder is writable; the
+   wizard now reports the exact error instead of failing silently.
+4. **GitHub-hosted build.** The `release-windows.yml` workflow is committed and
+   smoke-tests the installer on `windows-latest`; the first green run is recorded
+   in the release notes for the tag.
+
+<details>
+<summary>Historical release checklist (v1.1.1)</summary>
 
 Status of the **v1.1.1** release (security-hardened). Every "verified" line was
 executed on this machine; anything not verified says so explicitly.
@@ -121,3 +165,5 @@ quarkon --config examples/distill.yaml run
 - `synthesis.target_samples` must be `>= 50` for `run` (pre-flight blocker).
 - `privacy.salt` is stored in the manifest for reproducibility and is not a
   secret (see SECURITY.md).
+
+</details>

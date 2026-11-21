@@ -79,6 +79,37 @@ quarkon preview --samples 3            # look at example quality first
 quarkon audit --export audit.json      # evidence pack for security review
 ```
 
+## Windows installer (one download, no Python)
+
+Download `QuarkonSetup-<version>-win64.exe` from the
+[Releases](https://github.com/Kdjkvv7886/quarkon/releases) page and double-click
+it. The setup installs into your own user profile (no administrator password, no
+UAC prompt), adds desktop and Start-menu shortcuts, registers an uninstaller in
+*Windows Settings → Apps*, and opens the Quarkon interface as soon as it finishes.
+
+- **Nothing to configure first.** The setup carries its own Python runtime,
+  Pydantic, the UI assets and the translations — Python does not need to be
+  installed, and there is nothing to `pip install`.
+- **Everything stays on this computer.** The interface listens on `127.0.0.1`
+  only and every request carries a per-session token; the browser opens the
+  address with the token already in it.
+- **Your work is separated from the program.** Projects live in
+  `%USERPROFILE%\Quarkon`; upgrades and uninstalls never touch them.
+- **A portable zip** (`Quarkon-<version>-win64-portable.zip`) is published next to
+  the installer for locked-down machines where running a setup executable is not
+  allowed: unpack it and run `Quarkon\Quarkon.exe`.
+
+For IT departments the same executable deploys unattended (per-user, exit code
+`0` on success):
+
+```powershell
+QuarkonSetup-3.2.0-win64.exe --silent --dir "$env:LOCALAPPDATA\Programs\Quarkon" --no-launch
+QuarkonSetup-3.2.0-win64.exe --silent --uninstall
+```
+
+Build the artefacts yourself with `python packaging/windows/build_windows.py`
+(see [packaging/windows/README.md](packaging/windows/README.md)).
+
 ## Languages
 
 The interface is available in 21 languages (European languages, Arabic, Hebrew,

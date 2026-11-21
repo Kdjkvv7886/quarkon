@@ -1,0 +1,3 @@
+# Build dependencies for the Windows installer.
+# The runtime dependencies of the application come from pyproject.toml.
+pyinstaller>=6.6,<7
