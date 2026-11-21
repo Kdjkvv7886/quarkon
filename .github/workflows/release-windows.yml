@@ -41,8 +41,9 @@ jobs:
       - name: Smoke-test a silent installation
         shell: pwsh
         run: |
-          $version = (Select-String -Path quarkon/core/version.py -Pattern '__version__').Line.Split('"')[1]
-          $setup = "dist/windows/QuarkonSetup-$version-win64.exe"
+          $setup = (Get-ChildItem dist/windows -Filter 'QuarkonSetup-*-win64.exe' | Select-Object -First 1).FullName
+          if (-not $setup) { throw 'the installer was not built' }
+          Write-Host "Smoke-testing $setup"
           pwsh -File packaging/windows/smoke_test.ps1 -SetupPath $setup
 
       - name: Upload artefacts
