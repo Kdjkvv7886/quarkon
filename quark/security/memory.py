@@ -22,6 +22,7 @@ from __future__ import annotations
 import ctypes
 import ctypes.util
 import errno
+import os
 import sys
 from functools import lru_cache
 from typing import Any, Final
@@ -101,6 +102,29 @@ def _libc() -> ctypes.CDLL:
     return library
 
 
+def _page_size() -> int:
+    """Operating-system page size; ``madvise`` requires page-aligned ranges."""
+    try:
+        return int(os.sysconf("SC_PAGE_SIZE"))
+    except (AttributeError, ValueError, OSError):  # pragma: no cover - exotic hosts
+        return 4096
+
+
+def _aligned_range(buffer_ptr: int, size: int) -> tuple[int, int]:
+    """Expand ``[buffer_ptr, buffer_ptr + size)`` to whole pages.
+
+    ``mlock`` tolerates an unaligned start, but ``madvise(MADV_DONTDUMP)`` returns
+    ``EINVAL`` unless the address is page-aligned (Linux man page). Aligning the
+    range before both calls keeps them consistent and makes a small buffer or a
+    tensor storage offset safe to protect.
+    """
+    page = _page_size()
+    start = buffer_ptr - (buffer_ptr % page)
+    end = buffer_ptr + size
+    aligned_size = ((end + page - 1) // page) * page - start
+    return start, aligned_size
+
+
 def _raise_from_errno(operation: str, size: int) -> None:
     code = ctypes.get_errno()
     detail = errno.errorcode.get(code, str(code))
@@ -151,15 +175,17 @@ class LinuxMemoryProtector:
                 hint="run the engine in the Linux container image; macOS/Windows lack MADV_DONTDUMP",
             )
         LinuxMemoryProtector._validate(buffer_ptr, size)
+        start, aligned_size = _aligned_range(buffer_ptr, size)
         library = _libc()
         # 1) Pin the pages so the kernel cannot page them out.
-        if library.mlock(ctypes.c_void_p(buffer_ptr), size) != 0:
-            _raise_from_errno("mlock", size)
-        # 2) Keep the range out of core dumps and ptrace snapshots.
-        if library.madvise(ctypes.c_void_p(buffer_ptr), size, MADV_DONTDUMP) != 0:
+        if library.mlock(ctypes.c_void_p(start), aligned_size) != 0:
+            _raise_from_errno("mlock", aligned_size)
+        # 2) Keep the range out of core dumps and ptrace snapshots. ``madvise``
+        # rejects unaligned addresses, hence the page-aligned range above.
+        if library.madvise(ctypes.c_void_p(start), aligned_size, MADV_DONTDUMP) != 0:
             # Roll the pin back so a partially protected buffer cannot linger.
-            library.munlock(ctypes.c_void_p(buffer_ptr), size)
-            _raise_from_errno("madvise(MADV_DONTDUMP)", size)
+            library.munlock(ctypes.c_void_p(start), aligned_size)
+            _raise_from_errno("madvise(MADV_DONTDUMP)", aligned_size)
 
     @staticmethod
     def unlock(buffer_ptr: int, size: int) -> bool:
@@ -167,9 +193,10 @@ class LinuxMemoryProtector:
         if not LinuxMemoryProtector.is_linux():
             return False
         LinuxMemoryProtector._validate(buffer_ptr, size)
+        start, aligned_size = _aligned_range(buffer_ptr, size)
         try:
             library = _libc()
-            unlocked = int(library.munlock(ctypes.c_void_p(buffer_ptr), size))
+            unlocked = int(library.munlock(ctypes.c_void_p(start), aligned_size))
             return unlocked == 0
         except MemoryProtectionError:  # pragma: no cover - library unavailable
             return False

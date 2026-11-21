@@ -207,8 +207,6 @@ class TestMemoryProtection:
         buffer = bytearray(64)
         pointer = ctypes.addressof((ctypes.c_char * 64).from_buffer(buffer))
         if sys.platform.startswith("linux"):
-            size = LinuxMemoryProtector.protect_tensor  # pragma: no cover - platform specific
-            assert size is not None
             LinuxMemoryProtector.lock_and_protect(pointer, 64)
             assert LinuxMemoryProtector.unlock(pointer, 64) is True
         else:
