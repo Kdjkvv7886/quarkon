@@ -9,7 +9,7 @@ executed on this machine; anything not verified says so explicitly.
 |---|---|
 | Version | `1.1.1` (defined once in `quarkon/core/version.py`) |
 | Repository | <https://github.com/Kdjkvv7886/quarkon> (private) |
-| Commits | `main` at `373dd3d` (initial release + security hardening) |
+| Commits | `main` at `98a7991` (rename + security hardening + refill race fix) |
 | Tags | `v1.1.0`, `v1.1.1` |
 | CI | green: <https://github.com/Kdjkvv7886/quarkon/actions/runs/44908306892> |
 | Artefacts | `quarkon-1.1.1-py3-none-any.whl`, `quarkon-1.1.1.tar.gz` |
