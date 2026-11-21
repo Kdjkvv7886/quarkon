@@ -104,9 +104,12 @@ def _libc() -> ctypes.CDLL:
 
 def _page_size() -> int:
     """Operating-system page size; ``madvise`` requires page-aligned ranges."""
+    sysconf = getattr(os, "sysconf", None)
+    if sysconf is None:  # pragma: no cover - Windows has no sysconf
+        return 4096
     try:
-        return int(os.sysconf("SC_PAGE_SIZE"))
-    except (AttributeError, ValueError, OSError):  # pragma: no cover - exotic hosts
+        return int(sysconf("SC_PAGE_SIZE"))
+    except (ValueError, OSError):  # pragma: no cover - exotic hosts
         return 4096
 
 
