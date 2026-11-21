@@ -11,7 +11,7 @@ executed on this machine; anything not verified says so explicitly.
 | Repository | <https://github.com/Kdjkvv7886/quarkon> (private) |
 | Commits | `main` at `373dd3d` (initial release + security hardening) |
 | Tags | `v1.1.0`, `v1.1.1` |
-| CI | green: <https://github.com/Kdjkvv7886/quarkon/actions/runs/44907489626> |
+| CI | green: <https://github.com/Kdjkvv7886/quarkon/actions/runs/44908306892> |
 | Artefacts | `quarkon-1.1.1-py3-none-any.whl`, `quarkon-1.1.1.tar.gz` |
 
 ## Verified locally
@@ -21,8 +21,8 @@ executed on this machine; anything not verified says so explicitly.
 | Lint | `ruff check quarkon tests` | clean (0 findings) |
 | Types (Windows) | `mypy quarkon` (strict) | 0 errors, 42 modules |
 | Types (Linux) | `mypy --platform linux quarkon` | 0 errors (CI equivalent) |
-| Tests 3.14 | `pytest tests` | **482 passed** (4 consecutive full runs) |
-| Tests 3.11 | `pytest tests` | 482 passed |
+| Tests 3.14 | `pytest tests` | **483 passed** (repeated full runs) |
+| Tests 3.11 | `pytest tests` | 483 passed |
 | Static security | `bandit -r quarkon -ll` | 0 findings (all severities suppressed or absent) |
 | Dependency audit | `pip-audit` on declared runtime deps | no known vulnerabilities |
 | Build | `python -m build --wheel --sdist` | wheel + sdist built |
@@ -35,7 +35,7 @@ executed on this machine; anything not verified says so explicitly.
 | SDK surface | installed wheel | `CleanRoomSanitizer`, `CoTRouter`, `run_preflight_checks`, `ALL_LINEAR_MODULES` importable |
 | Pre-flight | `quarkon lint` | ~80-100 ms; correctly blocks this host (4 GB VRAM < 6 GB requirement) |
 | Privacy | end-to-end test | original PII absent from API payload and dataset; vault purged |
-| CI (remote) | GitHub Actions run 44907489626 | 4/4 jobs green (3.10, 3.11, 3.12, security) |
+| CI (remote) | GitHub Actions run 44908306892 | 4/4 jobs green (3.10, 3.11, 3.12, security) |
 
 ## CI (GitHub Actions)
 
