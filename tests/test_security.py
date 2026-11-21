@@ -319,7 +319,10 @@ class TestNoSecretPersistence:
                 assert SECRET_KEY not in path.read_text(encoding="utf-8", errors="ignore"), path
 
     def test_version_metadata_is_consistent(self) -> None:
-        import tomllib
+        try:  # Python 3.11+
+            import tomllib
+        except ModuleNotFoundError:  # Python 3.10
+            import tomli as tomllib
 
         pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
         assert pyproject["project"]["version"] == __version__
