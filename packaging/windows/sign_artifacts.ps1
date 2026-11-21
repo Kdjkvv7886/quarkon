@@ -18,12 +18,12 @@
 
 $ErrorActionPreference = "Stop"
 
-# Note: the caller (build_windows.py) drops the inherited PSModulePath before
-# starting this script. GitHub Actions exports a PowerShell 7 module path, and
-# Windows PowerShell 5.1 then cannot autoload Microsoft.PowerShell.Security; with
-# the variable removed, PowerShell computes its own default path and the signing
-# cmdlets load normally. Do not import the module manually - "Import-Module -Force"
-# trips a type-data conflict on the runner.
+# GitHub Actions exports a PSModulePath that contains the PowerShell 7 module
+# copies. Windows PowerShell 5.1 then loads two versions of the same type data and
+# fails to autoload Microsoft.PowerShell.Security (both "module could not be loaded"
+# and "member already present" come from this). Point the module path at the
+# Windows PowerShell modules directory only - and never Import-Module manually.
+$env:PSModulePath = Join-Path $PSHOME "Modules"
 
 $files = @()
 if ($env:QUARKON_SIGN_FILES) {
