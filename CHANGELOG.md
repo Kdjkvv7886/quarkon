@@ -4,10 +4,11 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2026-11-22
 
-Interface refresh: the local web UI was rebuilt around a project dashboard with
-real charts, and the design now matches the Windows installer.
+Interface release: the local web UI was rebuilt around a project dashboard with
+real charts, an atmosphere layer and a command palette, and the design now matches
+the Windows installer. The Windows installer carries the new interface.
 
 ### Added
 
@@ -21,6 +22,14 @@ real charts, and the design now matches the Windows installer.
 - 9 dashboard strings localised in all 21 catalogs plus `status.ready`.
 - Keyboard shortcuts (1-4 sections, R refresh, Esc dismiss), copy-log action,
   toast notifications, hash-based tab routing and an offline banner.
+- Atmosphere layer: drifting aurora gradients, film grain, gradient headline and
+  KPI numbers, orbital hero decoration, glass cards with border glow, glowing
+  chart strokes, sheen sweep on templates, animated count-up KPIs, a 14-day
+  sparkline, scroll reveal with a timer fallback and a shimmer skeleton.
+- Command palette (`Ctrl+K`) for section jumps, starting a phase, refreshing,
+  copying the log and exporting the audit pack.
+- `job-live` mode intensifies the interface while a phase runs; every animation
+  is disabled under `prefers-reduced-motion`.
 
 ### Changed
 

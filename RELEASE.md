@@ -1,5 +1,26 @@
 # Release checklist
 
+## v3.3.0 — interface release (dashboard, atmosphere, command palette)
+
+Status: **verified on this machine**. The Windows installer now ships the new
+interface; no pipeline behaviour changed.
+
+| Item | Value |
+|---|---|
+| Version | `3.3.0` |
+| Packages | `quarkon` 3.3.0 (UI) + `quark` 2.0.0 (unchanged) |
+| Interface | Overview dashboard (donut, KPIs, reasoning/latency histograms, tiers, activity, phase stepper), atmosphere layer, `Ctrl+K` palette, 66 localised strings in 21 catalogs |
+| API | new `GET /api/stats` (bounded 20 000 records) |
+| Windows artefacts | rebuilt and signed as `Kdjkvv7886`; smoke test on the signed installer |
+
+| Gate | Result |
+|---|---|
+| Tests | 585 passed (2 UI tests added) |
+| Types / lint | mypy strict 0 on 64 modules (Windows + Linux), ruff 0, bandit -ll 0 |
+| Visual | headless Chrome screenshots + DevTools-protocol check of the palette |
+| CI | green on the release commit (3.10/3.11/3.12 + security) |
+
+
 ## v3.2.1 — publisher identity and code signing
 
 Status: **verified on this machine**. The executables now name `Kdjkvv7886` in

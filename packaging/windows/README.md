@@ -91,7 +91,7 @@ $env:QUARKON_SIGN_PFX = "$PWD\build\signing\quarkon-signing.pfx"
 $env:QUARKON_SIGN_PFX_PASSWORD = "…"
 python packaging/windows/build_windows.py
 
-Get-AuthenticodeSignature dist\windows\QuarkonSetup-3.2.1-win64.exe |
+Get-AuthenticodeSignature dist\windows\QuarkonSetup-3.3.0-win64.exe |
     Format-List Status, SignerCertificate
 ```
 

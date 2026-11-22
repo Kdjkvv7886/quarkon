@@ -105,8 +105,8 @@ UAC prompt), adds desktop and Start-menu shortcuts, registers an uninstaller in
   replaces it (a PFX secret swap, no rebuild). Verify an executable with:
 
   ```powershell
-  Get-AuthenticodeSignature .\QuarkonSetup-3.2.1-win64.exe | Format-List Status, SignerCertificate
-  (Get-Item .\QuarkonSetup-3.2.1-win64.exe).VersionInfo | Format-List CompanyName, ProductName, FileVersion
+  Get-AuthenticodeSignature .\QuarkonSetup-3.3.0-win64.exe | Format-List Status, SignerCertificate
+  (Get-Item .\QuarkonSetup-3.3.0-win64.exe).VersionInfo | Format-List CompanyName, ProductName, FileVersion
   ```
 
   The signer certificate is published next to the release
@@ -117,8 +117,8 @@ For IT departments the same executable deploys unattended (per-user, exit code
 `0` on success):
 
 ```powershell
-QuarkonSetup-3.2.1-win64.exe --silent --dir "$env:LOCALAPPDATA\Programs\Quarkon" --no-launch
-QuarkonSetup-3.2.1-win64.exe --silent --uninstall
+QuarkonSetup-3.3.0-win64.exe --silent --dir "$env:LOCALAPPDATA\Programs\Quarkon" --no-launch
+QuarkonSetup-3.3.0-win64.exe --silent --uninstall
 ```
 
 Build the artefacts yourself with `python packaging/windows/build_windows.py`
