@@ -21,6 +21,7 @@
     lastOk: true,
   };
 
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
@@ -235,10 +236,12 @@
       : Number(stats.target_samples);
     const ratio = stats.ratio === null || stats.ratio === undefined ? null : Number(stats.ratio);
 
-    $("kpi-accepted").textContent = fmt(accepted);
-    $("kpi-tokens").textContent = fmt((stats.tokens || {}).total || 0);
-    $("kpi-rejected").textContent = fmt(stats.rejected || 0);
-    $("kpi-models").textContent = fmt(((stats.artefacts || {}).gguf || []).length);
+    animateNumber($("kpi-accepted"), accepted);
+    animateNumber($("kpi-tokens"), (stats.tokens || {}).total || 0);
+    animateNumber($("kpi-rejected"), stats.rejected || 0);
+    animateNumber($("kpi-models"), ((stats.artefacts || {}).gguf || []).length);
+    $("kpis").setAttribute("aria-busy", "false");
+    renderSparkline(stats.activity || []);
 
     const projectName = String(stats.project_dir || "").split(/[\\/]/).filter(Boolean).pop() || "Quarkon";
     $("hero-eyebrow").textContent = projectName;
@@ -401,6 +404,60 @@
       : "";
   }
 
+  function animateNumber(node, value) {
+    const target = Number(value || 0);
+    if (reduceMotion) {
+      node.textContent = fmt(target);
+      return;
+    }
+    const from = Number(String(node.textContent).replace(/[^0-9.-]/g, "")) || 0;
+    const start = performance.now();
+    const steps = 520;
+    const frame = (now) => {
+      const progress = Math.min(1, (now - start) / steps);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      node.textContent = fmt(Math.round(from + (target - from) * eased));
+      if (progress < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  function renderSparkline(activity) {
+    const host = $("hero-spark");
+    if (!host) return;
+    host.innerHTML = "";
+    const counts = activity.map((day) => Number(day.count || 0));
+    if (counts.length < 2) return;
+    const width = 190;
+    const height = 44;
+    const max = Math.max(1, ...counts);
+    const step = width / (counts.length - 1);
+    const points = counts.map((count, index) => {
+      const x = step * index;
+      const y = height - 4 - (count / max) * (height - 10);
+      return [x, y];
+    });
+    const root = svg("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "activity" });
+    const defs = svg("defs");
+    const line = svg("linearGradient", { id: "spark-gradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+    line.appendChild(svg("stop", { offset: "0", "stop-color": "#3b82f6" }));
+    line.appendChild(svg("stop", { offset: "1", "stop-color": "#22d3ee" }));
+    const fill = svg("linearGradient", { id: "spark-fill", x1: "0", y1: "0", x2: "0", y2: "1" });
+    fill.appendChild(svg("stop", { offset: "0", "stop-color": "rgba(59,130,246,.35)" }));
+    fill.appendChild(svg("stop", { offset: "1", "stop-color": "rgba(59,130,246,0)" }));
+    defs.appendChild(line);
+    defs.appendChild(fill);
+    root.appendChild(defs);
+    const path = points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+    root.appendChild(svg("path", { class: "spark-fill", d: `${path} L${width},${height} L0,${height} Z` }));
+    root.appendChild(svg("path", { class: "spark-line", d: path }));
+    const last = points[points.length - 1];
+    root.appendChild(svg("circle", { cx: last[0], cy: last[1], r: 2.4, fill: "#7dd3fc" }));
+    host.appendChild(root);
+    const total = counts.reduce((sum, value) => sum + value, 0);
+    $("hero-spark-label").textContent = `${fmt(total)} examples · last 14 days`;
+  }
+
   function renderActivity(activity) {
     const host = $("chart-activity");
     host.innerHTML = "";
@@ -475,16 +532,19 @@
     });
     host.appendChild(bar);
 
-    const legend = document.createElement("div");
-    legend.className = "legend";
+    const rows = document.createElement("div");
+    rows.className = "tier-rows";
     tiers.forEach((item, index) => {
-      const node = document.createElement("span");
-      node.className = "legend-item";
-      node.innerHTML = `<span class="legend-swatch" style="background:${palette[index % palette.length]}"></span>
-        ${esc(item.tier)} · ${fmt(item.count)}`;
-      legend.appendChild(node);
+      const count = Number(item.count || 0);
+      const share = (count / total) * 100;
+      const row = document.createElement("div");
+      row.className = "tier-row";
+      row.innerHTML = `<span class="tier-label">${esc(item.tier)}</span>
+        <span class="tier-track"><span style="width:${share.toFixed(1)}%;background:${palette[index % palette.length]}"></span></span>
+        <span class="tier-count">${fmt(count)}</span>`;
+      rows.appendChild(row);
     });
-    host.appendChild(legend);
+    host.appendChild(rows);
     $("tiers-meta").textContent = `${fmt(total)} examples classified`;
   }
 
@@ -614,6 +674,7 @@
         ? "Continue with the next button, or open the audit pack for review."
         : "Fix the problem above and press the same button again; finished work is kept.";
     }
+    document.body.classList.toggle("job-live", running);
     if (!running) {
       stopElapsed();
       $("job-elapsed").textContent = "";
@@ -716,9 +777,120 @@
     });
   }
 
+  // -------------------------------------------------------------- atmosphere
+  function setupReveal() {
+    const targets = $$(".card, .kpi, .chart-card");
+    targets.forEach((node) => node.setAttribute("data-reveal", ""));
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      targets.forEach((node) => node.classList.add("revealed"));
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("revealed");
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
+    targets.forEach((node) => observer.observe(node));
+    // Anything already on screen is revealed at once; a timer guarantees that a
+    // browser without IntersectionObserver callbacks never leaves content hidden.
+    targets.forEach((node) => {
+      if (node.getBoundingClientRect().top < window.innerHeight) node.classList.add("revealed");
+    });
+    setTimeout(() => targets.forEach((node) => node.classList.add("revealed")), 900);
+  }
+
+  const PALETTE_ACTIONS = () => [
+    { label: state.labels["nav.overview"] || "Overview", hint: "1", run: () => setTab("overview") },
+    { label: state.labels["nav.setup"] || "Setup", hint: "2", run: () => setTab("setup") },
+    { label: state.labels["nav.run"] || "Run", hint: "3", run: () => setTab("run") },
+    { label: state.labels["nav.help"] || "Help", hint: "4", run: () => setTab("help") },
+    { label: state.labels["action.synthesize"] || "Generate training data", hint: "run", run: () => { setTab("run"); startPhase("synthesize"); } },
+    { label: "Refresh the overview", hint: "R", run: () => loadStats() },
+    { label: "Copy the log", hint: "", run: () => $("copy-log").click() },
+    { label: "Export audit pack (JSON)", hint: "", run: () => exportAudit("json") },
+  ];
+
+  function setupPalette() {
+    const shell = $("palette");
+    const input = $("palette-input");
+    const list = $("palette-list");
+    let items = [];
+    let active = 0;
+
+    const close = () => {
+      shell.classList.add("hidden");
+      input.value = "";
+      document.body.style.overflow = "";
+    };
+    const open = () => {
+      shell.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+      render("");
+      input.focus();
+    };
+    const render = (query) => {
+      const needle = query.trim().toLowerCase();
+      items = PALETTE_ACTIONS().filter((item) => !needle || item.label.toLowerCase().includes(needle));
+      active = 0;
+      list.innerHTML = "";
+      items.forEach((item, index) => {
+        const row = document.createElement("li");
+        row.className = "palette-item";
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", index === active ? "true" : "false");
+        row.innerHTML = `<span>${esc(item.label)}</span>${item.hint ? `<kbd>${esc(item.hint)}</kbd>` : ""}`;
+        row.addEventListener("mouseenter", () => { active = index; paint(); });
+        row.addEventListener("click", () => execute());
+        list.appendChild(row);
+      });
+      paint();
+    };
+    const paint = () => {
+      $$(".palette-item", list).forEach((row, index) => {
+        row.setAttribute("aria-selected", index === active ? "true" : "false");
+      });
+    };
+    const execute = () => {
+      const item = items[active];
+      close();
+      if (item) item.run();
+    };
+
+    $("palette-open").addEventListener("click", open);
+    input.addEventListener("input", () => render(input.value));
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        active = Math.min(items.length - 1, active + 1);
+        paint();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        active = Math.max(0, active - 1);
+        paint();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        execute();
+      } else if (event.key === "Escape") {
+        close();
+      }
+    });
+    shell.addEventListener("click", (event) => { if (event.target === shell) close(); });
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        shell.classList.contains("hidden") ? open() : close();
+      }
+      if (event.key === "Escape" && !shell.classList.contains("hidden")) close();
+    });
+  }
+
   // -------------------------------------------------------------------- boot
   async function boot() {
     wire();
+    setupReveal();
+    setupPalette();
     try {
       const data = await api("/api/bootstrap");
       state.bootstrap = data;

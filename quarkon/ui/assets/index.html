@@ -6,9 +6,16 @@
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0b0f14" />
   <title>Quarkon</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0f14'/%3E%3Cellipse cx='32' cy='32' rx='21' ry='11' fill='none' stroke='%233b82f6' stroke-width='4'/%3E%3Cellipse cx='32' cy='32' rx='21' ry='11' fill='none' stroke='%238b5cf6' stroke-width='4' transform='rotate(60 32 32)'/%3E%3Cellipse cx='32' cy='32' rx='21' ry='11' fill='none' stroke='%2322d3ee' stroke-width='4' transform='rotate(120 32 32)'/%3E%3Ccircle cx='32' cy='32' r='3.4' fill='white'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
+  <div class="aurora" aria-hidden="true">
+    <span class="aurora-blob a1"></span>
+    <span class="aurora-blob a2"></span>
+    <span class="aurora-blob a3"></span>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
   <a class="skip-link" href="#main" data-i18n="nav.skip">Skip to content</a>
 
   <header class="topbar">
@@ -39,6 +46,9 @@
         <span class="pill-dot" aria-hidden="true"></span>
         <span id="connection-text" data-i18n="status.running">Working...</span>
       </span>
+      <button class="btn btn-small btn-ghost palette-hint" id="palette-open" title="Command palette (Ctrl+K)">
+        <kbd>Ctrl</kbd><kbd>K</kbd>
+      </button>
       <label class="select-field">
         <span class="select-label" data-i18n="lang.current">Language</span>
         <select id="locale-select" aria-label="Language"></select>
@@ -60,10 +70,31 @@
     <!-- ------------------------------------------------------------- overview -->
     <section id="tab-overview" class="panel" role="tabpanel" aria-labelledby="tablink-overview">
       <div class="hero">
+        <div class="hero-orbit" aria-hidden="true">
+          <svg viewBox="0 0 320 320" role="presentation">
+            <defs>
+              <linearGradient id="orbit-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#3b82f6" />
+                <stop offset=".55" stop-color="#8b5cf6" />
+                <stop offset="1" stop-color="#22d3ee" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="160" cy="160" rx="132" ry="58" fill="none" stroke="url(#orbit-gradient)" stroke-width="1.4" opacity=".55" />
+            <ellipse cx="160" cy="160" rx="132" ry="58" fill="none" stroke="url(#orbit-gradient)" stroke-width="1.4" opacity=".4" transform="rotate(60 160 160)" />
+            <ellipse cx="160" cy="160" rx="132" ry="58" fill="none" stroke="url(#orbit-gradient)" stroke-width="1.4" opacity=".28" transform="rotate(120 160 160)" />
+            <circle r="3.4" fill="#bfdbfe">
+              <animateMotion dur="24s" repeatCount="indefinite" path="M160,102 a132,58 0 1,0 0,116 a132,58 0 1,0 0,-116" />
+            </circle>
+          </svg>
+        </div>
         <div class="hero-copy">
           <div class="eyebrow"><span class="dot"></span><span id="hero-eyebrow">Quarkon</span></div>
           <h1 id="hero-title">Your project at a glance</h1>
           <p class="hero-sub" id="hero-sub">Track how much training data is ready and whether this computer can finish the run.</p>
+          <div class="hero-strip">
+            <div id="hero-spark" class="hero-spark"></div>
+            <span class="hero-strip-label" id="hero-spark-label"></span>
+          </div>
           <div class="hero-actions">
             <button class="btn btn-primary" id="hero-run" data-i18n="action.synthesize">Generate training data</button>
             <button class="btn" id="hero-setup" data-i18n="nav.setup">Setup</button>
@@ -79,7 +110,7 @@
         </div>
       </div>
 
-      <div class="kpis" id="kpis">
+      <div class="kpis" id="kpis" aria-busy="true">
         <div class="kpi"><span class="kpi-value" id="kpi-accepted">0</span><span class="kpi-label" data-i18n="dash.accepted">Accepted examples</span></div>
         <div class="kpi"><span class="kpi-value" id="kpi-tokens">0</span><span class="kpi-label" data-i18n="dash.tokens">Tokens used</span></div>
         <div class="kpi"><span class="kpi-value" id="kpi-rejected">0</span><span class="kpi-label">Rejected</span></div>
@@ -224,6 +255,20 @@
       </div>
     </section>
 
+    <!-- ------------------------------------------------------------- palette -->
+    <div id="palette" class="palette-shell hidden" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div class="palette-box">
+        <input id="palette-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Jump to a section or run an action…" />
+        <ul id="palette-list" class="palette-list" role="listbox"></ul>
+        <div class="palette-foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+          <span><kbd>Enter</kbd> run</span>
+          <span><kbd>Esc</kbd> close</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ------------------------------------------------------------------ run -->
     <section id="tab-run" class="panel" role="tabpanel" aria-labelledby="tablink-run">
       <div class="section-head">
@@ -331,13 +376,12 @@
     </section>
   </main>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
   <div class="statusbar">
     <span id="status-left">Loopback only · token-protected</span>
     <span id="status-right"></span>
   </div>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="/assets/app.js"></script>
 </body>
 </html>
