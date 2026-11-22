@@ -3,57 +3,186 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f14" />
   <title>Quarkon</title>
   <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main" data-i18n="nav.skip">Skip to content</a>
+
   <header class="topbar">
     <div class="brand">
-      <div class="logo">Q</div>
-      <div>
-        <div class="name">Quarkon</div>
-        <div class="tagline" data-i18n="app.tagline">Distill a reasoning model into a compact model your company can run itself.</div>
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" role="presentation">
+          <defs>
+            <linearGradient id="mark-gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#3b82f6" />
+              <stop offset="0.55" stop-color="#8b5cf6" />
+              <stop offset="1" stop-color="#22d3ee" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="32" cy="32" rx="21" ry="11" fill="none" stroke="url(#mark-gradient)" stroke-width="3.4" transform="rotate(0 32 32)" />
+          <ellipse cx="32" cy="32" rx="21" ry="11" fill="none" stroke="url(#mark-gradient)" stroke-width="3.4" transform="rotate(60 32 32)" opacity=".85" />
+          <ellipse cx="32" cy="32" rx="21" ry="11" fill="none" stroke="url(#mark-gradient)" stroke-width="3.4" transform="rotate(120 32 32)" opacity=".7" />
+          <circle cx="32" cy="32" r="3.2" fill="#ffffff" />
+        </svg>
+      </span>
+      <div class="brand-text">
+        <div class="brand-name">Quarkon</div>
+        <div class="brand-tagline" data-i18n="app.tagline">Distill a reasoning model into a compact model your company can run itself.</div>
       </div>
     </div>
+
     <div class="top-actions">
-      <label class="lang">
-        <span data-i18n="lang.current">Language</span>
-        <select id="locale-select"></select>
+      <span id="connection" class="pill pill-muted" title="Interface state">
+        <span class="pill-dot" aria-hidden="true"></span>
+        <span id="connection-text" data-i18n="status.running">Working...</span>
+      </span>
+      <label class="select-field">
+        <span class="select-label" data-i18n="lang.current">Language</span>
+        <select id="locale-select" aria-label="Language"></select>
       </label>
-      <span class="version" id="version"></span>
+      <span class="version" id="version" aria-label="Version"></span>
     </div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="setup" data-i18n="nav.setup">Setup</button>
-    <button class="tab" data-tab="run" data-i18n="nav.run">Run</button>
-    <button class="tab" data-tab="help" data-i18n="nav.help">Help</button>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" id="tablink-overview" role="tab" aria-controls="tab-overview" aria-selected="false" data-tab="overview" data-i18n="nav.overview">Overview</button>
+    <button class="tab" id="tablink-setup" role="tab" aria-controls="tab-setup" aria-selected="false" data-tab="setup" data-i18n="nav.setup">Setup</button>
+    <button class="tab" id="tablink-run" role="tab" aria-controls="tab-run" aria-selected="false" data-tab="run" data-i18n="nav.run">Run</button>
+    <button class="tab" id="tablink-help" role="tab" aria-controls="tab-help" aria-selected="false" data-tab="help" data-i18n="nav.help">Help</button>
+    <span class="tabs-spacer"></span>
+    <span class="tabs-meta" id="project-meta"></span>
   </nav>
 
-  <main>
-    <section id="tab-setup" class="panel active">
-      <h2 data-i18n="setup.title">Guided setup</h2>
-      <ol class="steps">
-        <li><span data-i18n="setup.step1">1. Choose the task</span></li>
-        <li><span data-i18n="setup.step2">2. Choose the language</span></li>
-        <li><span data-i18n="setup.step3">3. Set the size</span></li>
-        <li><span data-i18n="setup.step4">4. Check this computer</span></li>
-      </ol>
-
-      <div class="grid">
-        <div class="card">
-          <h3 data-i18n="field.template">Ready-made task</h3>
-          <div id="templates" class="template-list"></div>
+  <main id="main">
+    <!-- ------------------------------------------------------------- overview -->
+    <section id="tab-overview" class="panel" role="tabpanel" aria-labelledby="tablink-overview">
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="dot"></span><span id="hero-eyebrow">Quarkon</span></div>
+          <h1 id="hero-title">Your project at a glance</h1>
+          <p class="hero-sub" id="hero-sub">Track how much training data is ready and whether this computer can finish the run.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" id="hero-run" data-i18n="action.synthesize">Generate training data</button>
+            <button class="btn" id="hero-setup" data-i18n="nav.setup">Setup</button>
+            <button class="btn btn-ghost" id="hero-refresh" title="Refresh data">Refresh</button>
+          </div>
         </div>
-        <div class="card">
-          <h3 data-i18n="field.objective">What should the model learn to do?</h3>
-          <textarea id="objective" rows="5" placeholder="Extract the vendor, invoice number and total from an invoice document."></textarea>
+        <div class="hero-progress">
+          <div id="progress-donut" class="donut"></div>
+          <div class="progress-caption">
+            <span id="progress-caption" data-i18n="dash.progress">Training data progress</span>
+            <span id="progress-value" class="progress-value">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis">
+        <div class="kpi"><span class="kpi-value" id="kpi-accepted">0</span><span class="kpi-label" data-i18n="dash.accepted">Accepted examples</span></div>
+        <div class="kpi"><span class="kpi-value" id="kpi-tokens">0</span><span class="kpi-label" data-i18n="dash.tokens">Tokens used</span></div>
+        <div class="kpi"><span class="kpi-value" id="kpi-rejected">0</span><span class="kpi-label">Rejected</span></div>
+        <div class="kpi"><span class="kpi-value" id="kpi-models">0</span><span class="kpi-label">Packaged models</span></div>
+      </div>
+
+      <div id="dash-empty" class="empty-state hidden">
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="presentation">
+            <path d="M8 38V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M8 38h32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M13 31v-6M20 31V19M27 31v-9M34 31V13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          </svg>
+        </div>
+        <p class="empty-text" data-i18n="dash.empty">Generate training data to see charts.</p>
+        <button class="btn btn-primary" id="empty-run" data-i18n="action.synthesize">Generate training data</button>
+      </div>
+
+      <div class="charts" id="charts">
+        <article class="card chart-card">
+          <header class="card-head">
+            <h2 data-i18n="dash.reasoning">Reasoning length</h2>
+            <span class="card-meta" id="reasoning-meta"></span>
+          </header>
+          <div class="chart" id="chart-reasoning"></div>
+        </article>
+
+        <article class="card chart-card">
+          <header class="card-head">
+            <h2 data-i18n="dash.activity">Activity</h2>
+            <span class="card-meta" id="activity-meta"></span>
+          </header>
+          <div class="chart" id="chart-activity"></div>
+        </article>
+
+        <article class="card chart-card">
+          <header class="card-head">
+            <h2 data-i18n="dash.tiers">Reasoning depth</h2>
+            <span class="card-meta" id="tiers-meta"></span>
+          </header>
+          <div class="chart" id="chart-tiers"></div>
+        </article>
+
+        <article class="card chart-card">
+          <header class="card-head">
+            <h2 data-i18n="dash.latency">Teacher latency</h2>
+            <span class="card-meta" id="latency-meta"></span>
+          </header>
+          <div class="chart" id="chart-latency"></div>
+        </article>
+
+        <article class="card chart-card chart-wide">
+          <header class="card-head">
+            <h2 data-i18n="dash.phases">Pipeline phases</h2>
+            <span class="card-meta" id="phases-meta"></span>
+          </header>
+          <div id="chart-phases" class="phases"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------- setup -->
+    <section id="tab-setup" class="panel" role="tabpanel" aria-labelledby="tablink-setup">
+      <div class="section-head">
+        <div>
+          <h1 data-i18n="setup.title">Guided setup</h1>
+          <p class="section-sub">Four steps: task, language, size, check. Everything can be changed later.</p>
+        </div>
+        <ol class="step-chips">
+          <li><span class="chip-num">1</span><span data-i18n="setup.step1">1. Choose the task</span></li>
+          <li><span class="chip-num">2</span><span data-i18n="setup.step2">2. Choose the language</span></li>
+          <li><span class="chip-num">3</span><span data-i18n="setup.step3">3. Set the size</span></li>
+          <li><span class="chip-num">4</span><span data-i18n="setup.step4">4. Check this computer</span></li>
+        </ol>
+      </div>
+
+      <div class="grid grid-2">
+        <article class="card">
+          <header class="card-head">
+            <h2 data-i18n="field.template">Ready-made task</h2>
+            <span class="card-meta">6 templates</span>
+          </header>
+          <div id="templates" class="template-list" role="list"></div>
+          <p class="hint">Pick a template to prefill the task, or write your own below.</p>
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2 data-i18n="field.objective">What should the model learn to do?</h2>
+          </header>
+          <textarea id="objective" rows="5" aria-label="What should the model learn to do?" placeholder="Extract the vendor, invoice number and total from an invoice document."></textarea>
           <p class="hint" id="objective-hint"></p>
+
           <div class="row">
-            <label><span data-i18n="field.samples">Training examples</span>
-              <input id="samples" type="number" min="50" max="10000" step="50" value="300" />
+            <label class="field">
+              <span class="field-label" data-i18n="field.samples">Training examples</span>
+              <div class="slider-row">
+                <input id="samples" type="range" min="50" max="2000" step="50" value="300" />
+                <input id="samples-number" type="number" min="50" max="10000" step="50" value="300" />
+              </div>
             </label>
-            <label><span data-i18n="field.language">Language of the examples</span>
+            <label class="field">
+              <span class="field-label" data-i18n="field.language">Language of the examples</span>
               <select id="data-language">
                 <option value="en">English</option><option value="de">Deutsch</option>
                 <option value="fr">Français</option><option value="es">Español</option>
@@ -64,82 +193,150 @@
               </select>
             </label>
           </div>
+
           <div class="actions">
-            <button id="create" class="primary" data-i18n="action.create">Create project</button>
-            <button id="check" data-i18n="action.check_system">Check this computer</button>
+            <button id="create" class="btn btn-primary" data-i18n="action.create">Create project</button>
+            <button id="check" class="btn" data-i18n="action.check_system">Check this computer</button>
           </div>
-          <div id="setup-result" class="result"></div>
-        </div>
+          <div id="setup-result" class="result" role="status"></div>
+        </article>
       </div>
 
-      <div class="grid">
-        <div class="card">
-          <h3 data-i18n="cost.title">Estimated cost</h3>
-          <div id="cost" class="cost">-</div>
+      <div class="grid grid-2">
+        <article class="card">
+          <header class="card-head">
+            <h2 data-i18n="cost.title">Estimated cost</h2>
+            <span class="card-meta" id="cost-meta"></span>
+          </header>
+          <div id="cost" class="cost">—</div>
           <p class="hint" data-i18n="cost.note"></p>
-        </div>
-        <div class="card">
-          <h3 data-i18n="doctor.title">System check</h3>
-          <div id="doctor" class="findings"></div>
-          <button id="doctor-run" data-i18n="action.check_system">Check this computer</button>
-        </div>
+        </article>
+        <article class="card">
+          <header class="card-head">
+            <h2 data-i18n="doctor.title">System check</h2>
+            <span class="card-meta" id="doctor-meta"></span>
+          </header>
+          <div id="doctor" class="findings" role="status">
+            <div class="finding">Find out whether this computer can finish the run — memory, disk and the training stack.</div>
+          </div>
+          <button id="doctor-run" class="btn" data-i18n="action.check_system">Check this computer</button>
+        </article>
       </div>
     </section>
 
-    <section id="tab-run" class="panel">
-      <h2 data-i18n="results.title">Results</h2>
-      <div class="grid">
-        <div class="card status-card">
-          <div class="metric"><span id="dataset-lines">0</span><label>examples</label></div>
-          <div class="metric"><span id="adapter-state">-</span><label>adapter</label></div>
-          <div class="metric"><span id="gguf-count">0</span><label>packaged models</label></div>
+    <!-- ------------------------------------------------------------------ run -->
+    <section id="tab-run" class="panel" role="tabpanel" aria-labelledby="tablink-run">
+      <div class="section-head">
+        <div>
+          <h1 data-i18n="results.title">Results</h1>
+          <p class="section-sub">Run one phase at a time. Finished work is kept if something fails.</p>
         </div>
-        <div class="card">
-          <h3 id="job-title" data-i18n="status.running">Working...</h3>
-          <div class="actions">
-            <button id="run-synthesize" class="primary" data-i18n="action.synthesize">Generate training data</button>
-            <button id="run-train" data-i18n="action.train">Train the model</button>
-            <button id="run-export" data-i18n="action.export">Package for your servers</button>
-            <button id="cancel">Cancel</button>
-          </div>
-          <div id="error-card" class="error hidden">
-            <h4 data-i18n="error.title">What went wrong</h4>
-            <p id="error-meaning"></p>
-            <h4 data-i18n="error.fix">What to do</h4>
-            <p id="error-fix"></p>
-          </div>
-          <pre id="log" class="log" aria-live="polite"></pre>
-        </div>
+        <span class="pill pill-muted" id="job-pill"><span class="pill-dot"></span><span id="job-pill-text">Idle</span></span>
       </div>
 
-      <div class="grid">
-        <div class="card">
-          <h3 data-i18n="results.next">Suggested next step</h3>
+      <div class="grid grid-3">
+        <article class="card phase-card" data-phase="synthesize">
+          <div class="phase-index">1</div>
+          <h2 data-i18n="action.synthesize">Generate training data</h2>
+          <p class="hint">Reasoning samples from the teacher model, validated and deduplicated.</p>
+          <button class="btn btn-primary" id="run-synthesize" data-i18n="action.synthesize">Generate training data</button>
+        </article>
+        <article class="card phase-card" data-phase="train">
+          <div class="phase-index">2</div>
+          <h2 data-i18n="action.train">Train the model</h2>
+          <p class="hint">Micro-LoRA adapter on top of the base model, with the resolved config.</p>
+          <button class="btn" id="run-train" data-i18n="action.train">Train the model</button>
+        </article>
+        <article class="card phase-card" data-phase="export">
+          <div class="phase-index">3</div>
+          <h2 data-i18n="action.export">Package for your servers</h2>
+          <p class="hint">GGUF for Ollama or vLLM, with a manifest that records every hash.</p>
+          <button class="btn" id="run-export" data-i18n="action.export">Package for your servers</button>
+        </article>
+      </div>
+
+      <article class="card">
+        <header class="card-head">
+          <h2 id="job-title">Idle</h2>
+          <div class="card-tools">
+            <span class="card-meta" id="job-elapsed"></span>
+            <button class="btn btn-small btn-ghost" id="copy-log" title="Copy log">Copy log</button>
+            <button class="btn btn-small btn-danger" id="cancel">Cancel</button>
+          </div>
+        </header>
+        <div class="phase-progress" id="job-progress"><span></span></div>
+        <pre id="log" class="log" aria-live="polite"></pre>
+        <div id="error-card" class="callout hidden">
+          <h3 data-i18n="error.title">What went wrong</h3>
+          <p id="error-meaning"></p>
+          <h3 data-i18n="error.fix">What to do</h3>
+          <p id="error-fix"></p>
+        </div>
+      </article>
+
+      <div class="grid grid-2">
+        <article class="card">
+          <header class="card-head"><h2 data-i18n="results.next">Suggested next step</h2></header>
           <div id="next-step" class="result"></div>
-        </div>
-        <div class="card">
-          <h3>Audit pack</h3>
-          <p class="hint">Hashes, config fingerprint and compliance notes for security review.</p>
+        </article>
+        <article class="card">
+          <header class="card-head">
+            <h2>Audit pack</h2>
+            <span class="card-meta">For security review</span>
+          </header>
+          <p class="hint">Hashes, config fingerprint and compliance notes in one export.</p>
           <div class="actions">
-            <button id="audit-json">Export JSON</button>
-            <button id="audit-csv">Export CSV</button>
+            <button id="audit-json" class="btn">Export JSON</button>
+            <button id="audit-csv" class="btn">Export CSV</button>
           </div>
-          <div id="audit-result" class="result"></div>
-        </div>
+          <div id="audit-result" class="result" role="status"></div>
+        </article>
       </div>
     </section>
 
-    <section id="tab-help" class="panel">
-      <h2 data-i18n="help.title">Help</h2>
-      <div class="card"><p data-i18n="help.plain"></p></div>
-      <div class="card"><p data-i18n="help.security"></p></div>
-      <div class="card">
-        <h3>Privacy</h3>
-        <ul class="notes"><li data-i18n="privacy.no_telemetry"></li><li data-i18n="privacy.local_first"></li></ul>
-        <ul id="compliance" class="notes"></ul>
+    <!-- ----------------------------------------------------------------- help -->
+    <section id="tab-help" class="panel" role="tabpanel" aria-labelledby="tablink-help">
+      <div class="section-head">
+        <div>
+          <h1 data-i18n="help.title">Help</h1>
+          <p class="section-sub">Plain-language explanations for every screen.</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <article class="card"><h2 data-i18n="help.plain"></h2></article>
+        <article class="card"><h2 data-i18n="help.security"></h2></article>
+      </div>
+      <div class="grid grid-2">
+        <article class="card">
+          <header class="card-head"><h2>Privacy</h2></header>
+          <ul class="notes">
+            <li data-i18n="privacy.no_telemetry"></li>
+            <li data-i18n="privacy.local_first"></li>
+          </ul>
+          <ul id="compliance" class="notes"></ul>
+        </article>
+        <article class="card">
+          <header class="card-head"><h2>Keyboard and links</h2></header>
+          <ul class="notes shortcuts">
+            <li><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> switch sections</li>
+            <li><kbd>R</kbd> refresh the overview</li>
+            <li><kbd>Esc</kbd> close notifications</li>
+          </ul>
+          <ul class="notes links">
+            <li><a href="https://github.com/Kdjkvv7886/quarkon" rel="noreferrer noopener" target="_blank">Source code on GitHub</a></li>
+            <li><a href="https://github.com/Kdjkvv7886/quarkon/releases" rel="noreferrer noopener" target="_blank">Releases and installer</a></li>
+          </ul>
+        </article>
       </div>
     </section>
   </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="statusbar">
+    <span id="status-left">Loopback only · token-protected</span>
+    <span id="status-right"></span>
+  </div>
 
   <script src="/assets/app.js"></script>
 </body>

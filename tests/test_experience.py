@@ -8,6 +8,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -320,6 +321,75 @@ class TestUiServer:
             assert payload["version"]
             assert len(payload["locales"]) >= 20
             assert payload["labels"]["nav.setup"]
+
+    def test_dashboard_assets_are_served(self, tmp_path: Path) -> None:
+        with _ServerThread(tmp_path) as (_server, base):
+            status, body = _get(base + "/")
+            assert status == 200
+            assert b'id="tab-overview"' in body
+            status, script = _get(base + "/assets/app.js")
+            assert status == 200
+            assert b"renderDashboard" in script and b"/api/stats" in script
+            status, styles = _get(base + "/assets/style.css")
+            assert status == 200
+            assert b".donut" in styles
+
+    def test_stats_endpoint_aggregates_samples(self, tmp_path: Path) -> None:
+        with _ServerThread(tmp_path) as (server, base):
+            status, body = _get(base + "/api/stats", server.token)
+            assert status == 200
+            empty = json.loads(body)
+            assert empty["accepted"] == 0
+            assert [phase["key"] for phase in empty["phases"]] == ["synthesize", "train", "export"]
+            assert empty["phases"][0]["status"] == "pending"
+            assert len(empty["activity"]) == 14
+
+            status, body = _post(
+                base + "/api/setup",
+                server.token,
+                {"template": "invoice-extract", "samples": 120},
+            )
+            assert status == 200, body
+            created = json.loads(body)
+            project = Path(created["project_dir"])
+            now = datetime.now(timezone.utc).isoformat()
+            records = [
+                {
+                    "timestamp": now,
+                    "messages": [],
+                    "metadata": {
+                        "reasoning_chars": 900,
+                        "latency_ms": 1200,
+                        "token_count": 1500,
+                        "reasoning_tokens": 300,
+                        "cot_tier": "standard",
+                    },
+                },
+                {
+                    "timestamp": now,
+                    "messages": [],
+                    "metadata": {
+                        "reasoning_chars": 2400,
+                        "latency_ms": 3200,
+                        "token_count": 2100,
+                        "cot_tier": "deep",
+                    },
+                },
+            ]
+            (project / "samples.jsonl").write_text(
+                "\n".join(json.dumps(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+            status, body = _get(base + "/api/stats", server.token)
+            assert status == 200
+            stats = json.loads(body)
+            assert stats["accepted"] == 2
+            assert stats["target_samples"] == 120
+            assert stats["tokens"]["total"] == 3600
+            assert stats["reasoning"]["median"] == 900
+            assert stats["latency"]["p50_ms"] == 1200
+            assert [tier["tier"] for tier in stats["tiers"]] == ["deep", "standard"]
+            assert sum(bucket["count"] for bucket in stats["reasoning"]["histogram"]) == 2
 
     def test_setup_plan_state_and_audit_endpoints(self, tmp_path: Path) -> None:
         with _ServerThread(tmp_path) as (server, base):

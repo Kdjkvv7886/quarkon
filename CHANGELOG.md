@@ -4,6 +4,33 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Interface refresh: the local web UI was rebuilt around a project dashboard with
+real charts, and the design now matches the Windows installer.
+
+### Added
+
+- **Overview dashboard** - training-data progress donut, accepted/rejected/token
+  KPIs, reasoning-length histogram, teacher-latency histogram, reasoning-depth
+  tiers, 14-day activity area chart and a pipeline phase stepper. All charts are
+  hand-drawn SVG; no external library, font or CDN is used.
+- `GET /api/stats` - aggregates `samples.jsonl` metadata (reasoning chars,
+  latency, tokens, CoT tier, per-day counts), the manifest phases and dataset
+  counters, bounded to 20 000 records.
+- 9 dashboard strings localised in all 21 catalogs plus `status.ready`.
+- Keyboard shortcuts (1-4 sections, R refresh, Esc dismiss), copy-log action,
+  toast notifications, hash-based tab routing and an offline banner.
+
+### Changed
+
+- Dark brand-consistent design system: gradient hero, rounded pill buttons,
+  sticky top bar, responsive layout, RTL-aware spacing, reduced-motion support
+  and visible focus states.
+- Setup, Run and Help tabs were re-laid out; empty states now explain what to do
+  next instead of showing blank cards.
+- Tests: dashboard API and static-asset coverage in `tests/test_experience.py`.
+
 ## [3.2.1] - 2026-11-21
 
 Ships the Windows executables with publisher metadata and an Authenticode

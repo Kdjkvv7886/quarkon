@@ -20,9 +20,10 @@ import secrets
 import threading
 import time
 import webbrowser
-from collections import deque
-from collections.abc import Callable
+from collections import Counter, deque
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -58,6 +59,13 @@ _log = get_logger("ui.server")
 _ASSETS: Final[Path] = Path(__file__).parent / "assets"
 _MAX_BODY: Final[int] = 1 * 1024 * 1024
 _JOB_LOG_LIMIT: Final[int] = 500
+#: Upper bound for the dashboard scan so a very large dataset cannot stall the
+#: loopback server; the totals come from the manifest when they disagree.
+_STATS_RECORD_LIMIT: Final[int] = 20_000
+_REASONING_EDGES: Final[tuple[int, ...]] = (0, 400, 800, 1_600, 3_200, 6_400, 1_000_000_000)
+_LATENCY_EDGES: Final[tuple[int, ...]] = (0, 500, 1_000, 2_500, 5_000, 10_000, 1_000_000_000)
+_ACTIVITY_DAYS: Final[int] = 14
+_PHASE_ORDER: Final[tuple[str, ...]] = ("synthesize", "train", "export")
 
 
 @dataclass
@@ -271,6 +279,73 @@ class UIServer:
             "job": self._job.snapshot() if self._job is not None else None,
         }
 
+    def stats(self) -> dict[str, Any]:
+        """Aggregates for the dashboard: progress, reasoning depth, latency, phases."""
+        samples = _collect_samples(self.project_dir / "samples.jsonl")
+        reasoning = sorted(samples["reasoning_chars"])
+        latencies = sorted(samples["latencies_ms"])
+
+        target: int | None = None
+        config_path = self.project_dir / "distill.yaml"
+        if config_path.is_file():
+            try:
+                target = int(PipelineConfig.from_yaml(config_path).synthesis.target_samples)
+            except Exception:  # a broken config must not break the dashboard
+                target = None
+
+        manifest: dict[str, Any] = {}
+        manifest_path = self.project_dir / "manifest.json"
+        if manifest_path.is_file():
+            try:
+                loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                loaded = {}
+            if isinstance(loaded, dict):
+                manifest = loaded
+
+        dataset = manifest.get("dataset")
+        dataset_info: dict[str, Any] = dataset if isinstance(dataset, dict) else {}
+        accepted = max(int(samples["accepted"]), int(dataset_info.get("accepted_samples") or 0))
+        rejected = int(dataset_info.get("rejected_samples") or 0)
+        ratio = round(min(1.0, accepted / target), 4) if target else None
+
+        adapter = self.project_dir / "adapter" / "adapter_model.safetensors"
+        models_dir = self.project_dir / "models"
+        gguf = sorted(path.name for path in models_dir.rglob("*.gguf")) if models_dir.is_dir() else []
+
+        return {
+            "generated_at": round(time.time(), 3),
+            "project_dir": str(self.project_dir),
+            "has_project": config_path.is_file(),
+            "target_samples": target,
+            "accepted": accepted,
+            "rejected": rejected,
+            "ratio": ratio,
+            "reasoning": {
+                "histogram": _buckets(reasoning, _REASONING_EDGES),
+                "median": _percentile(reasoning, 0.5),
+                "p90": _percentile(reasoning, 0.9),
+            },
+            "latency": {
+                "histogram": _buckets(latencies, _LATENCY_EDGES),
+                "p50_ms": _percentile(latencies, 0.5),
+                "p95_ms": _percentile(latencies, 0.95),
+            },
+            "tiers": [
+                {"tier": tier, "count": count}
+                for tier, count in sorted(samples["tiers"].items())
+            ],
+            "tokens": samples["tokens"],
+            "activity": _activity_days(samples["per_day"], _ACTIVITY_DAYS),
+            "phases": _manifest_phases(manifest),
+            "manifest_status": manifest.get("status"),
+            "artefacts": {
+                "has_adapter": adapter.is_file(),
+                "adapter_dir": str(adapter.parent),
+                "gguf": gguf,
+            },
+        }
+
     def setup_project(self, payload: dict[str, Any]) -> dict[str, Any]:
         template_id = str(payload.get("template") or "").strip()
         objective = str(payload.get("objective") or "").strip()
@@ -388,6 +463,7 @@ class UIServer:
         """Every interface string for the current locale (the JS applies them)."""
         keys = (
             "app.tagline",
+            "nav.overview",
             "nav.setup",
             "nav.run",
             "nav.help",
@@ -414,6 +490,7 @@ class UIServer:
             "action.train",
             "action.export",
             "action.check_system",
+            "status.ready",
             "status.running",
             "status.done",
             "status.failed",
@@ -422,6 +499,14 @@ class UIServer:
             "doctor.fix",
             "cost.title",
             "cost.note",
+            "dash.accepted",
+            "dash.empty",
+            "dash.latency",
+            "dash.phases",
+            "dash.progress",
+            "dash.reasoning",
+            "dash.tiers",
+            "dash.tokens",
             "results.title",
             "results.next",
             "help.title",
@@ -530,6 +615,9 @@ def _make_handler(server: UIServer) -> type[BaseHTTPRequestHandler]:
                 if route == "/api/state":
                     self._send_json(server.state())
                     return
+                if route == "/api/stats":
+                    self._send_json(server.stats())
+                    return
                 if route == "/api/doctor":
                     self._send_json(server.doctor())
                     return
@@ -614,3 +702,127 @@ def serve(
     if on_ready is not None:
         on_ready(server)
     server.serve_forever()
+
+
+# ---------------------------------------------------------------- analytics
+def _percentile(sorted_values: Sequence[int], fraction: float) -> int:
+    """Nearest-rank percentile of an already sorted list (0 for an empty list)."""
+    if not sorted_values:
+        return 0
+    index = round(fraction * (len(sorted_values) - 1))
+    return int(sorted_values[min(max(index, 0), len(sorted_values) - 1)])
+
+
+def _buckets(values: Sequence[int], edges: Sequence[int]) -> list[dict[str, int]]:
+    """Count values into half-open buckets defined by ``edges``."""
+    counts = [0] * (len(edges) - 1)
+    for value in values:
+        for index in range(len(edges) - 1):
+            if edges[index] <= value < edges[index + 1]:
+                counts[index] += 1
+                break
+    return [
+        {"from": int(edges[index]), "to": int(edges[index + 1]), "count": counts[index]}
+        for index in range(len(counts))
+    ]
+
+
+def _collect_samples(path: Path) -> dict[str, Any]:
+    """Read ``samples.jsonl`` (bounded) and aggregate the numbers the dashboard shows."""
+    reasoning: list[int] = []
+    latencies: list[int] = []
+    tokens = {"total": 0, "prompt": 0, "completion": 0, "reasoning": 0}
+    tiers: Counter[str] = Counter()
+    per_day: Counter[str] = Counter()
+    accepted = 0
+    if not path.is_file():
+        return {
+            "accepted": 0,
+            "reasoning_chars": reasoning,
+            "latencies_ms": latencies,
+            "tokens": tokens,
+            "tiers": tiers,
+            "per_day": per_day,
+        }
+    try:
+        handle = path.open(encoding="utf-8", errors="ignore")
+    except OSError:
+        return {
+            "accepted": 0,
+            "reasoning_chars": reasoning,
+            "latencies_ms": latencies,
+            "tokens": tokens,
+            "tiers": tiers,
+            "per_day": per_day,
+        }
+    with handle:
+        for index, line in enumerate(handle):
+            if index >= _STATS_RECORD_LIMIT:
+                break
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(record, dict):
+                continue
+            accepted += 1
+            metadata = record.get("metadata")
+            meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
+            reasoning_chars = meta.get("reasoning_chars")
+            if isinstance(reasoning_chars, (int, float)) and reasoning_chars >= 0:
+                reasoning.append(int(reasoning_chars))
+            latency = meta.get("latency_ms")
+            if isinstance(latency, (int, float)) and latency >= 0:
+                latencies.append(int(latency))
+            for key in tokens:
+                value = meta.get(key if key != "total" else "token_count")
+                if isinstance(value, (int, float)) and value >= 0:
+                    tokens[key] += int(value)
+            tier = meta.get("cot_tier")
+            tiers[str(tier) if tier not in (None, "") else "unknown"] += 1
+            timestamp = record.get("timestamp")
+            if isinstance(timestamp, str) and len(timestamp) >= 10:
+                per_day[timestamp[:10]] += 1
+    return {
+        "accepted": accepted,
+        "reasoning_chars": reasoning,
+        "latencies_ms": latencies,
+        "tokens": tokens,
+        "tiers": tiers,
+        "per_day": per_day,
+    }
+
+
+def _activity_days(per_day: Mapping[str, int], days: int) -> list[dict[str, Any]]:
+    """The last ``days`` UTC calendar days, oldest first, with zero-filled gaps."""
+    today = datetime.now(timezone.utc).date()
+    return [
+        {
+            "date": (today - timedelta(days=offset)).isoformat(),
+            "count": int(per_day.get((today - timedelta(days=offset)).isoformat(), 0)),
+        }
+        for offset in range(days - 1, -1, -1)
+    ]
+
+
+def _manifest_phases(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The three pipeline phases with their recorded status (``pending`` when absent)."""
+    phases = manifest.get("phases")
+    phase_map: Mapping[str, Any] = phases if isinstance(phases, Mapping) else {}
+    result: list[dict[str, Any]] = []
+    for key in _PHASE_ORDER:
+        entry = phase_map.get(key)
+        if isinstance(entry, Mapping):
+            duration = entry.get("duration_s")
+            result.append(
+                {
+                    "key": key,
+                    "status": str(entry.get("status") or "unknown"),
+                    "duration_s": float(duration) if isinstance(duration, (int, float)) else None,
+                }
+            )
+        else:
+            result.append({"key": key, "status": "pending", "duration_s": None})
+    return result
